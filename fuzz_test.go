@@ -25,6 +25,7 @@ func FuzzRender(f *testing.F) {
 		if utf8.Valid(src) && !utf8.Valid(out) {
 			t.Fatalf("valid UTF-8 in, invalid UTF-8 out\nsource: %q\noutput: %q", src, out)
 		}
+		RenderWith(src, Options{UnsafeHTML: true}) // bez sprawdzania wyniku: surowy HTML nie musi być poprawny
 		if again := Render(src); !bytes.Equal(out, again) {
 			t.Fatalf("output differs between calls\nsource: %q", src)
 		}

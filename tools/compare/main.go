@@ -114,7 +114,7 @@ func main() {
 		if err := md.Convert([]byte(in.markdown), &buf); err != nil {
 			fatal(fmt.Errorf("%s: reference parser: %w", in.name, err))
 		}
-		ours := htmlnorm.Normalize(string(gomdgo.Render([]byte(in.markdown))))
+		ours := htmlnorm.Normalize(string(gomdgo.RenderWith([]byte(in.markdown), gomdgo.Options{UnsafeHTML: true})))
 		ref := htmlnorm.Normalize(buf.String())
 		c.total++
 		if ours == ref {

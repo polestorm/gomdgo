@@ -5,7 +5,7 @@ Szacunki z 2026-11-21, w godzinach pracy z asystentem. Kryteria zakończenia ca�
 | Etap | Zakres | Szacunek | Stan |
 |---|---|---|---|
 | 0 | infrastruktura testów: wczytywanie przykładów specyfikacji (pytanie 1), test pokrycia wymagań, szkielet fuzzingu, moduł `tools/compare` z `goldmark` i normalizacją HTML | 4–6 h | gotowy 2026-11-21 |
-| 1 | struktura bloków: wiersze i tabulatory, cytaty i listy (z kontynuacją leniwą), nagłówki ATX i setext, linia pozioma, kod przez wcięcie i ogrodzony, akapity, definicje odsyłaczy, bloki HTML (7 rodzajów) | 15–25 h | — |
+| 1 | struktura bloków: wiersze i tabulatory, cytaty i listy (z kontynuacją leniwą), nagłówki ATX i setext, linia pozioma, kod przez wcięcie i ogrodzony, akapity, definicje odsyłaczy, bloki HTML (7 rodzajów) | 15–25 h | gotowy 2026-11-21 |
 | 2 | treść w wierszu: znaki ucieczki, encje, kod w wierszu, algorytm ograniczników (wyróżnienia), odnośniki i obrazy (w wierszu i referencyjne), autolinki, HTML w wierszu, łamanie wierszy | 15–25 h | — |
 | 3 | renderer HTML i bezpieczeństwo: escapowanie, lista dozwolonych schematów, polityka surowego HTML (escapuj, pomiń, przepuść), identyfikatory nagłówków | 4–6 h | — |
 | 4 | GFM: tabele, przekreślenie, listy zadań, rozszerzone autolinki, filtr znaczników | 8–12 h | — |

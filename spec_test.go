@@ -62,7 +62,7 @@ func runSpec(t *testing.T, examples []spectest.Example, passingFile string) {
 			order = append(order, e.Section)
 		}
 		c.all++
-		got := string(Render([]byte(e.Markdown)))
+		got := string(RenderWith([]byte(e.Markdown), Options{UnsafeHTML: true}))
 		if got == e.HTML {
 			c.ok++
 			passed = append(passed, e.Number)

@@ -37,11 +37,13 @@ kolumnę „Stan” w `docs/roadmap.md`.
 
 ## Jak pracujemy
 
-- etapy w kolejności z `docs/roadmap.md`; etap 0 (infrastruktura testów) jest gotowy, **następny krok: etap 1**
-  (struktura bloków), zaczynany od `requirements/blocks.md` i węzła z pozycją według ADR 0003;
+- etapy w kolejności z `docs/roadmap.md`; etapy 0 (infrastruktura testów) i 1 (struktura bloków) są gotowe,
+  **następny krok: etap 2** (treść w wierszu), zaczynany od `requirements/inlines.md`; miejsce wpięcia to
+  `renderer.inline` w `render.go`, a skanery etykiety, celu i tytułu odnośnika oraz znaczników HTML już istnieją
+  (`links.go`, `htmltag.go`, `escape.go`);
 - miara postępu: `go test -v -run TestSpec .`; listy zaliczonych przykładów `testdata/spec/passing-*.txt` przepisuje
   `go test -update .` (opis w `docs/testing.md`); porównanie z odniesieniem: `tools/compare`;
-- pytania otwarte w `docs/adr/open-questions.md`: 6 (niepoprawny UTF-8) przed końcem etapu 1, 7 (sygnatura `Render`)
+- pytania otwarte w `docs/adr/open-questions.md`: 6 (niepoprawny UTF-8) i 7 (sygnatura `Render`)
   przed etapem 3, 3 i 4 przed etapem 5; pytanie 2 (licencja) nie blokuje pracy;
 - wymagania piszemy razem z etapem, w plikach według prefiksów z `requirements/README.md`;
 - najpierw test (przykład specyfikacji albo plik korpusu), potem kod; liczba zaliczonych przykładów nie spada między

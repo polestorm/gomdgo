@@ -13,6 +13,8 @@ Numery są stałe; pytania rozstrzygnięte znikają z listy, a decyzja jest w AD
    użytkowej, czy własny opis w `requirements/` jako jedyne źródło? Do rozstrzygnięcia przed etapem 5.
 6. **Niepoprawny UTF-8 na wejściu.** Specyfikacja mówi tylko o U+0000 (zamiana na U+FFFD). Czy niepoprawne bajty
    zamieniamy na U+FFFD, czy przepuszczamy bez zmian? Dziś `DET-001` wymaga jedynie braku paniki i poprawnego
-   UTF-8 w wyniku dla poprawnego wejścia. Do rozstrzygnięcia w etapie 1.
-7. **Sygnatura `Render`.** Zaślepka etapu 0 to `Render([]byte) []byte`. Opcje (polityka HTML, schematy, punkty
+   UTF-8 w wyniku dla poprawnego wejścia; po etapie 1 niepoprawne bajty przechodzą bez zmian. Do rozstrzygnięcia
+   przed etapem 3.
+7. **Sygnatura `Render`.** Po etapie 1 są `Render([]byte) []byte` i tymczasowe `RenderWith(src, Options)`
+   z jedną opcją `UnsafeHTML` (potrzebną testom specyfikacji i `tools/compare`). Opcje (polityka HTML, schematy, punkty
    rozszerzeń) i błędy funkcji wywołującego wymagają decyzji o kształcie API przed etapem 3.

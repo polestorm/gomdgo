@@ -1,47 +1,32 @@
 package gomdgo
 
-import (
-	"bytes"
-)
+import "bytes"
 
-// Render zamienia źródło Markdown na fragment HTML.
+// Options to ustawienia renderowania.
 //
-// ZAŚLEPKA etapu 0: parsera jeszcze nie ma. Niepuste wejście trafia w całości, escapowane, do jednego akapitu.
-// Funkcja istnieje po to, żeby testy przykładów specyfikacji, fuzzing i tools/compare miały co wołać, a pomiar
-// zerowy był uczciwy. Sygnatura jest tymczasowa: opcje i błędy punktów rozszerzeń dojdą w etapach 3 i 5.
-func Render(src []byte) []byte {
-	text := bytes.Trim(src, " \t\r\n")
-	if len(text) == 0 {
-		return nil
-	}
-	var out bytes.Buffer
-	out.Grow(len(text) + 16)
-	out.WriteString("<p>")
-	escapeHTML(&out, text)
-	out.WriteString("</p>\n")
-	return out.Bytes()
+// Kształt tymczasowy: ostateczne API (opcje, punkty rozszerzeń, błędy funkcji wywołującego) wymaga decyzji
+// zapisanej jako pytanie 7 w docs/adr/open-questions.md.
+type Options struct {
+	// UnsafeHTML przepuszcza surowy HTML ze źródła bez zmian. Domyślnie HTML jest escapowany.
+	UnsafeHTML bool
 }
 
-// escapeHTML zapisuje tekst z zamianą czterech znaków, które specyfikacja każe escapować w treści i atrybutach.
-func escapeHTML(out *bytes.Buffer, text []byte) {
-	start := 0
-	for i, c := range text {
-		var rep string
-		switch c {
-		case '&':
-			rep = "&amp;"
-		case '<':
-			rep = "&lt;"
-		case '>':
-			rep = "&gt;"
-		case '"':
-			rep = "&quot;"
-		default:
-			continue
-		}
-		out.Write(text[start:i])
-		out.WriteString(rep)
-		start = i + 1
+// Render zamienia źródło Markdown na fragment HTML przy ustawieniach domyślnych (bezpiecznych).
+//
+// Stan po etapie 1: rozpoznawana jest struktura bloków CommonMark; treść w wierszu (wyróżnienia, odnośniki,
+// kod w wierszu) trafia do wyniku jako zwykły tekst.
+func Render(src []byte) []byte {
+	return RenderWith(src, Options{})
+}
+
+// RenderWith zamienia źródło Markdown na fragment HTML z podanymi ustawieniami.
+func RenderWith(src []byte, opts Options) []byte {
+	r := renderer{doc: parse(src), opts: opts}
+	r.render(r.doc.root)
+	out := r.out.Bytes()
+	if bytes.IndexByte(out, 0) >= 0 {
+		// Specyfikacja: znak U+0000 jest ze względów bezpieczeństwa zamieniany na U+FFFD.
+		out = bytes.ReplaceAll(out, []byte{0}, []byte("�"))
 	}
-	out.Write(text[start:])
+	return out
 }
