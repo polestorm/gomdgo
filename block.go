@@ -8,12 +8,13 @@ import "bytes"
 type parser struct {
 	doc     document
 	tip     *node // najgłębszy otwarty blok
+	padded  int   // liczba komórek tabel dopełnionych w tym dokumencie
 	lineNo  int   // numer bieżącego wiersza, od 1
 	lineOff int   // przesunięcie bieżącego wiersza w źródle
 }
 
-func parse(src []byte) *document {
-	p := &parser{doc: document{src: src, refs: map[string]*reference{}}}
+func parse(src []byte, ext Extension) *document {
+	p := &parser{doc: document{src: src, refs: map[string]*reference{}, ext: ext}}
 	p.doc.root = &node{kind: kindDocument, open: true, startLine: 1, endLine: 1}
 	p.tip = p.doc.root
 	for off := 0; off < len(src); {
@@ -43,11 +44,20 @@ func parse(src []byte) *document {
 // inlines uruchamia fazę drugą: treść każdego akapitu i nagłówka. Dopiero teraz znane są wszystkie
 // definicje odsyłaczy. Przejście po drzewie jest iteracyjne.
 func (p *parser) inlines() {
-	ip := inlineParser{doc: &p.doc}
+	ip := inlineParser{doc: &p.doc, ext: p.doc.ext}
 	root := p.doc.root
 	for n := root; ; {
-		if n.kind == kindParagraph || n.kind == kindHeading {
+		if n.kind == kindParagraph || n.kind == kindHeading || n.kind == kindTableCell {
+			task := 0
+			if n.kind == kindParagraph && p.doc.ext&TaskLists != 0 {
+				if task = taskMarker(p.doc.src, n); task != 0 {
+					n.spans[0].start += 3 // znacznik [ ] nie należy do treści akapitu
+				}
+			}
 			ip.parse(n)
+			if task != 0 {
+				n.prependChild(&node{kind: kindTaskCheckbox, pos: n.spans[0].start - 3, level: task - 1})
+			}
 		} else if n.first != nil {
 			n = n.first
 			continue
@@ -95,9 +105,9 @@ func (p *parser) line(s []byte) {
 			if p.continueHTML(next, c) {
 				return
 			}
-		case kindParagraph:
+		case kindParagraph, kindTable:
 			if !c.blank() {
-				para = next
+				para = next // dla tabeli: wiersz, który nie zaczyna innego bloku, jest jej kolejnym wierszem
 			}
 		}
 	} else if !allMatched && !c.blank() {
@@ -177,7 +187,34 @@ starts:
 			}
 		}
 
-		if para != nil && !lazy && (rest[0] == '=' || rest[0] == '-') && setextUnderline(rest) {
+		// Tabela: wiersz ograniczników pod ostatnim wierszem akapitu, który ma tyle samo komórek.
+		if para != nil && !lazy && para.kind == kindParagraph && p.doc.ext&Tables != 0 &&
+			(rest[0] == '|' || rest[0] == '-' || rest[0] == ':') {
+			header := para.spans[len(para.spans)-1]
+			headerText := p.doc.src[header.start:header.end]
+			aligns := tableDelimiterRow(rest)
+			if aligns != nil && (bytes.IndexByte(rest, '|') >= 0 || bytes.IndexByte(headerText, '|') >= 0) &&
+				len(splitTableRow(headerText)) == len(aligns) {
+				table := para
+				if len(para.spans) == 1 {
+					table.kind, table.spans = kindTable, nil
+				} else {
+					para.spans = para.spans[:len(para.spans)-1]
+					para.endLine--
+					closeUnmatched()
+					table = p.add(container, kindTable, 0)
+					table.pos, table.startLine = header.start, p.lineNo-1
+				}
+				table.aligns = aligns
+				p.lineNo--
+				p.addTableRow(table, header, 0)
+				p.lineNo++
+				table.endLine = p.lineNo
+				return
+			}
+		}
+
+		if para != nil && !lazy && para.kind == kindParagraph && (rest[0] == '=' || rest[0] == '-') && setextUnderline(rest) {
 			p.extractRefs(para)
 			if len(para.spans) > 0 {
 				para.kind = kindHeading
@@ -243,6 +280,12 @@ starts:
 	// 3. Reszta wiersza: pusty wiersz, dalszy ciąg akapitu albo nowy akapit.
 	if c.blank() {
 		closeUnmatched()
+		return
+	}
+	if para != nil && para.kind == kindTable {
+		c.skipSpaces()
+		p.addTableRow(para, span{p.lineOff + c.i, p.lineOff + len(s)}, 1)
+		para.endLine = p.lineNo
 		return
 	}
 	if para == nil {

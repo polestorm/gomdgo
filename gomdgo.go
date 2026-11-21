@@ -25,30 +25,48 @@ type Config struct {
 	RawHTML RawHTML
 
 	// Schemes: dozwolone schematy adresów odnośników i obrazów, bez dwukropka; wielkość liter nie ma znaczenia.
-	// nil oznacza listę domyślną (http, https, mailto); pusta lista dopuszcza tylko adresy bez schematu.
+	// nil oznacza listę domyślną (http, https, mailto, tel); pusta lista dopuszcza tylko adresy bez schematu.
 	// Adresy bez schematu (względne, #fragment) są dozwolone zawsze.
 	Schemes []string
 
 	// AnyScheme wyłącza sprawdzanie schematów. Wynik jest wtedy tak bezpieczny jak źródło.
 	AnyScheme bool
 
+	// Disable: rozszerzenia składni do wyłączenia. Domyślnie włączone są wszystkie rozszerzenia GitHub
+	// Flavored Markdown (tabele, przekreślenie, listy zadań, rozszerzone autolinki, filtr znaczników);
+	// Disable: GFM daje czysty CommonMark.
+	Disable Extension
+
+	// SingleTilde (zgodność z parserem odniesienia i z praktyką GitHub): przekreślenie obejmuje także tekst
+	// w pojedynczych tyldach, ~tak~. Bez znaczenia, gdy Strikethrough jest wyłączone. Specyfikacja GFM mówi
+	// o dwóch tyldach.
+	SingleTilde bool
+
+	// TableAlignStyle (zgodność z parserem odniesienia): wyrównanie kolumny tabeli jest zapisywane jako
+	// style="text-align:…" zamiast atrybutu align ze specyfikacji GFM.
+	TableAlignStyle bool
+
 	// HeadingIDs dodaje nagłówkom atrybut id utworzony z ich tekstu, unikalny w dokumencie.
 	HeadingIDs bool
 }
 
 // DefaultSchemes to schematy adresów dozwolone, gdy Config.Schemes jest nil.
-var DefaultSchemes = []string{"http", "https", "mailto"}
+var DefaultSchemes = []string{"http", "https", "mailto", "tel"}
 
 // Converter zamienia Markdown na HTML według ustalonych ustawień. Po utworzeniu jest niezmienny i można
 // go używać z wielu gorutyn jednocześnie.
 type Converter struct {
 	cfg     Config
 	schemes map[string]bool
+	ext     Extension // rozszerzenia przekazywane parserowi, z bitami wewnętrznymi
 }
 
 // New tworzy konwerter. Nieznana wartość Config.RawHTML działa jak RawHTMLEscape.
 func New(cfg Config) *Converter {
-	c := &Converter{cfg: cfg, schemes: map[string]bool{}}
+	c := &Converter{cfg: cfg, schemes: map[string]bool{}, ext: GFM &^ cfg.Disable}
+	if cfg.SingleTilde && c.ext&Strikethrough != 0 {
+		c.ext |= extSingleTilde
+	}
 	list := cfg.Schemes
 	if list == nil {
 		list = DefaultSchemes
@@ -62,8 +80,9 @@ func New(cfg Config) *Converter {
 
 var defaultConverter = New(Config{})
 
-// Render zamienia źródło Markdown na fragment HTML przy ustawieniach domyślnych. Nie zawodzi dla żadnego
-// wejścia: surowy HTML staje się tekstem, a odnośniki o niedozwolonym schemacie tracą adres.
+// Render zamienia źródło Markdown na fragment HTML przy ustawieniach domyślnych: CommonMark z rozszerzeniami
+// GFM. Nie zawodzi dla żadnego wejścia: surowy HTML staje się tekstem, a odnośniki o niedozwolonym schemacie
+// tracą adres.
 func Render(src []byte) []byte {
 	out, _ := defaultConverter.Parse(src).HTML() // bez punktów rozszerzeń błąd nie może powstać
 	return out
@@ -72,7 +91,7 @@ func Render(src []byte) []byte {
 // Parse czyta źródło Markdown i zwraca dokument. Nie zawodzi dla żadnego wejścia: każdy ciąg bajtów jest
 // jakimś dokumentem Markdown.
 func (c *Converter) Parse(src []byte) *Document {
-	return &Document{conv: c, doc: parse(sanitize(src))}
+	return &Document{conv: c, doc: parse(sanitize(src), c.ext)}
 }
 
 // Render to skrót: Parse, a potem Document.HTML.

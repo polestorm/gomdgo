@@ -17,7 +17,8 @@
 | wydajność | `BenchmarkCorpus` | porównanie z `goldmark` (kryterium K7) |
 
 Stan po etapie 3: nie ma jeszcze warstwy „wydajność” (etap 6). `TestPathological`
-obejmuje strukturę bloków (15 przypadków) i treść w wierszu (42 przypadki, lista `pathologicalInlines`).
+obejmuje strukturę bloków (15 przypadków), treść w wierszu (42, lista `pathologicalInlines`) i rozszerzenia
+GFM (23, lista `pathologicalGFM`); wszystkie są mierzone przy ustawieniach domyślnych, czyli z rozszerzeniami.
 
 `TestPathological` mierzy czas, więc zależy od maszyny: odśmiecanie pamięci jest na czas pomiaru wyłączone,
 liczy się najlepszy z trzech przebiegów, a przekroczenie progu jest sprawdzane drugi raz. Pomiar kontrolny
@@ -72,7 +73,10 @@ potwierdza pomiar: `goldmark` po normalizacji zalicza 652 z 652 przykładów Com
 Dwa tryby porównania:
 
 - zwykły: `goldmark` z `html.WithUnsafe()`, `gomdgo` z `Config{RawHTML: RawHTMLPass, AnyScheme: true}`, bo tego
-  oczekują przykłady specyfikacji; dla rozdziałów rozszerzeń GFM `goldmark` ma `extension.GFM`;
+  oczekują przykłady specyfikacji; dla przykładów CommonMark oba parsery są bez rozszerzeń (`Disable: GFM`),
+  dla rozdziałów rozszerzeń GFM i dla korpusu własnego oba je mają. Odniesienie zapisuje wtedy wyrównanie kolumn w atrybucie `align`
+  (`-refalign=attribute`, domyślnie); z `-refalign=style` odniesienie ma ustawienia domyślne, a `gomdgo`
+  opcje zgodności `SingleTilde` i `TableAlignStyle` (ADR 0008);
 - `-safe`: `goldmark` z ustawieniami domyślnymi, `gomdgo` z `Config{RawHTML: RawHTMLOmit}`; komentarz, który
   `goldmark` wstawia w miejscu pominiętego HTML, jest usuwany przed normalizacją. Zgodności ze specyfikacją
   w tym trybie się nie liczy.
@@ -90,7 +94,8 @@ po normalizacji.
 | 2026-11-21 | `cc7051d` (etap 0) | 80 / 652 | 1 / 24 | 88 / 676 (13,0%), `goldmark` v1.8.7 | zaślepka `Render` bez parsera: wynik przypadkowy, poziom zerowy miary; fuzzing 20 s (2,9 mln wywołań) bez błędu |
 | 2026-11-21 | `41b1f76` (etap 1) | 343 / 652 | 2 / 24 | 345 / 676 (51,0%) na przykładach specyfikacji; korpus własny 4 / 4; `goldmark` v1.8.7 | struktura bloków bez treści w wierszu; rozdziały Tabs, Precedence, Indented code blocks, Blank lines, Block quotes, List items i Lists zaliczone w całości (124 / 124), w pozostałych rozdziałach blokowych brakuje tylko przykładów wymagających treści w wierszu; fuzzing łącznie 125 s bez błędu |
 | 2026-11-21 | `a38663e` (etap 2) | **652 / 652** | 2 / 24 | 654 / 676 (96,7%) na przykładach specyfikacji, w tym CommonMark 652 / 652; korpus własny 6 / 6; `goldmark` v1.8.7 | treść w wierszu; K1 spełnione przy porównaniu co do bajta; brakujące 22 przykłady to rozszerzenia GFM (etap 4); fuzzing łącznie 215 s (ok. 5 mln wywołań w ostatnim przebiegu) bez błędu |
-| 2026-11-21 | etap 3, przed commitem | 652 / 652 | 2 / 24 | tryb zwykły: 654 / 676 (96,7%), CommonMark 652 / 652, korpus 6 / 6; tryb `-safe`: CommonMark 648 / 652 (99,4%), korpus 6 / 6; `goldmark` v1.8.7 | API z ADR 0005, polityka surowego HTML, lista schematów, identyfikatory nagłówków, niepoprawny UTF-8 (ADR 0004); 4 różnice trybu bezpiecznego to wpis 1 w `differences.md`; fuzzing łącznie 315 s, od tego etapu ze sprawdzianem bezpieczeństwa (7 mln wywołań w ostatnim przebiegu), bez błędu |
+| 2026-11-21 | `29b7f7d` (etap 3) | 652 / 652 | 2 / 24 | tryb zwykły: 654 / 676 (96,7%), CommonMark 652 / 652, korpus 6 / 6; tryb `-safe`: CommonMark 648 / 652 (99,4%), korpus 6 / 6; `goldmark` v1.8.7 | API z ADR 0005, polityka surowego HTML, lista schematów, identyfikatory nagłówków, niepoprawny UTF-8 (ADR 0004); 4 różnice trybu bezpiecznego to wpis 1 w `differences.md`; fuzzing łącznie 315 s, od tego etapu ze sprawdzianem bezpieczeństwa (7 mln wywołań w ostatnim przebiegu), bez błędu |
+| 2026-11-21 | etap 4 | 652 / 652 | **24 / 24** | tryb zwykły, 683 wejścia (676 przykładów + 7 plików korpusu): 681 (99,7%) z `-refalign=attribute`; 681 (99,7%) z `-refalign=style`, czyli odniesienie domyślne wobec `gomdgo` z opcjami zgodności (bez nich 680); tryb `-safe`: 677 (99,1%); `goldmark` v1.8.7 | lista schematów z `tel`; rozszerzenia GFM (domyślnie włączone, `Config.Disable` je wyłącza), opcje zgodności i limit dopełniania tabel (ADR 0007, 0008); CommonMark mierzony z `Disable: GFM`; K2 spełnione przy porównaniu co do bajta; wszystkie różnice opisane w `differences.md` (wiersze 1–8); `TestPathological` ma 80 przypadków; fuzzing łącznie 465 s, bez błędu |
 
 Pomiar samego odniesienia, 2026-11-21, `goldmark` v1.8.7, po normalizacji: CommonMark 652 / 652; rozszerzenia GFM
 22 / 24. Dwa odstępstwa od specyfikacji GFM są zapisane w `differences.md` jako zapowiedziane różnice.

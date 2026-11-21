@@ -55,7 +55,7 @@ func TestInlinePositions(t *testing.T) {
             text 6:15 "r"
   ref_defs 8:1
 `
-	doc := parse([]byte(src))
+	doc := parse([]byte(src), 0)
 	if got := dumpTree(doc, true); got != want {
 		t.Errorf("tree:\n%s\nwant:\n%s", got, want)
 	}

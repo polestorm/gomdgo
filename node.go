@@ -27,12 +27,20 @@ const (
 	kindLink
 	kindImage
 	kindHTMLInline
+	kindStrike       // rozszerzenie: przekreślenie
+	kindTaskCheckbox // rozszerzenie: pole wyboru na początku akapitu elementu listy; level 1 = zaznaczone
+
+	// rozszerzenie: tabela (blok liściowy), jej wiersze i komórki
+	kindTable
+	kindTableRow  // level 0 = wiersz nagłówka
+	kindTableCell // level = numer kolumny
 )
 
 var kindNames = [...]string{
 	"document", "block_quote", "list", "item", "paragraph", "heading", "thematic_break", "code_block",
 	"html_block", "ref_defs",
 	"text", "soft_break", "hard_break", "code", "emph", "strong", "link", "image", "html_inline",
+	"strike", "task_checkbox", "table", "table_row", "table_cell",
 }
 
 func (k kind) String() string { return kindNames[k] }
@@ -65,8 +73,9 @@ type node struct {
 	contentIndent int      // element listy: szerokość znacznika z odstępem (wcięcie treści)
 	markerLine    int      // cytat: ostatni wiersz ze znacznikiem >
 
-	level int    // nagłówek: 1–6
-	spans []span // akapit i nagłówek: wiersze treści do parsowania w wierszu
+	level  int     // nagłówek: 1–6; wiersz i komórka tabeli, pole wyboru: patrz rodzaje węzłów
+	spans  []span  // akapit, nagłówek i komórka tabeli: wiersze treści do parsowania w wierszu
+	aligns []uint8 // tabela: wyrównania kolumn
 
 	literal     []byte // kod, blok HTML, tekst i HTML w wierszu: treść dosłowna
 	trim        int    // kod przez wcięcie: długość treści bez końcowych pustych wierszy
@@ -89,6 +98,17 @@ func (n *node) appendChild(c *node) {
 		n.last.next = c
 	}
 	n.last = c
+}
+
+// prependChild wstawia c jako pierwsze dziecko n.
+func (n *node) prependChild(c *node) {
+	if n.first == nil {
+		n.appendChild(c)
+		return
+	}
+	c.parent, c.prev, c.next = n, nil, n.first
+	n.first.prev = c
+	n.first = c
 }
 
 // insertAfter wstawia w jako następne rodzeństwo n.
@@ -150,6 +170,7 @@ type document struct {
 	root       *node
 	refs       map[string]*reference
 	lineStarts []int
+	ext        Extension
 }
 
 // position zamienia przesunięcie bajtowe na wiersz i kolumnę, oba od 1; kolumna liczona w bajtach (ADR 0003).

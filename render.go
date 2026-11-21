@@ -87,6 +87,38 @@ func (r *renderer) enter(n *node) bool {
 			out.WriteByte('"')
 		}
 		out.WriteByte('>')
+	case kindTable:
+		r.cr()
+		out.WriteString("<table>\n")
+	case kindTableRow:
+		if n.level == 0 {
+			out.WriteString("<thead>\n")
+		} else if n.prev.level == 0 {
+			out.WriteString("<tbody>\n")
+		}
+		out.WriteString("<tr>\n")
+	case kindTableCell:
+		out.WriteString("<td")
+		if n.parent.level == 0 {
+			out.Truncate(out.Len() - 1)
+			out.WriteString("h")
+		}
+		if a := n.parent.parent.aligns[n.level]; a != alignNone {
+			if r.conv.cfg.TableAlignStyle {
+				out.WriteString(` style="text-align:` + alignNames[a] + `"`)
+			} else {
+				out.WriteString(` align="` + alignNames[a] + `"`)
+			}
+		}
+		out.WriteByte('>')
+	case kindStrike:
+		out.WriteString("<del>")
+	case kindTaskCheckbox:
+		if n.level == 1 {
+			out.WriteString(`<input checked="" disabled="" type="checkbox">`)
+		} else {
+			out.WriteString(`<input disabled="" type="checkbox">`)
+		}
 	case kindThematicBreak:
 		r.cr()
 		out.WriteString("<hr />\n")
@@ -105,7 +137,7 @@ func (r *renderer) enter(n *node) bool {
 		switch r.conv.cfg.RawHTML {
 		case RawHTMLPass:
 			r.cr()
-			out.Write(n.literal)
+			r.passHTML(n.literal)
 		case RawHTMLOmit:
 		default:
 			// Blok HTML jako tekst zachowuje się jak akapit, także w liście zwartej.
@@ -162,7 +194,7 @@ func (r *renderer) enter(n *node) bool {
 	case kindHTMLInline:
 		switch r.conv.cfg.RawHTML {
 		case RawHTMLPass:
-			out.Write(n.literal)
+			r.passHTML(n.literal)
 		case RawHTMLOmit:
 		default:
 			escapeHTML(out, n.literal)
@@ -178,6 +210,15 @@ func (r *renderer) titleAttr(n *node) {
 		r.out.WriteString(` title="`)
 		escapeHTML(&r.out, []byte(n.title))
 		r.out.WriteByte('"')
+	}
+}
+
+// passHTML zapisuje surowy HTML bez zmian albo, z filtrem znaczników, bez dziewięciu znaczników z listy.
+func (r *renderer) passHTML(literal []byte) {
+	if r.conv.ext&TagFilter != 0 {
+		writeTagFiltered(&r.out, literal)
+	} else {
+		r.out.Write(literal)
 	}
 }
 
@@ -272,6 +313,24 @@ func (r *renderer) leave(n *node) {
 		}
 	case kindHeading:
 		out.WriteString("</h" + strconv.Itoa(n.level) + ">\n")
+	case kindTable:
+		if n.last != n.first {
+			out.WriteString("</tbody>\n")
+		}
+		out.WriteString("</table>\n")
+	case kindTableRow:
+		out.WriteString("</tr>\n")
+		if n.level == 0 {
+			out.WriteString("</thead>\n")
+		}
+	case kindTableCell:
+		if n.parent.level == 0 {
+			out.WriteString("</th>\n")
+		} else {
+			out.WriteString("</td>\n")
+		}
+	case kindStrike:
+		out.WriteString("</del>")
 	case kindEmph:
 		out.WriteString("</em>")
 	case kindStrong:

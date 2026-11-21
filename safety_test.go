@@ -16,6 +16,9 @@ var safeTags = map[string][]string{
 	"p": nil, "h1": {"id"}, "h2": {"id"}, "h3": {"id"}, "h4": {"id"}, "h5": {"id"}, "h6": {"id"},
 	"ul": nil, "ol": {"start"}, "li": nil, "blockquote": nil, "pre": nil, "code": {"class"}, "hr": nil, "br": nil,
 	"em": nil, "strong": nil, "a": {"href", "title"}, "img": {"src", "alt", "title"},
+	// rozszerzenia GFM
+	"table": nil, "thead": nil, "tbody": nil, "tr": nil, "th": {"align", "style"}, "td": {"align", "style"}, "del": nil,
+	"input": {"checked", "disabled", "type"},
 }
 
 // checkSafe sprawdza wynik niezależnie od renderera: poprawny fragment, wyłącznie znaczniki i atrybuty
@@ -44,6 +47,18 @@ func checkSafe(out []byte) error {
 				if !strings.HasPrefix(value, "language-") {
 					return fmt.Errorf("class %q", value)
 				}
+			case "align":
+				if value != "left" && value != "center" && value != "right" {
+					return fmt.Errorf("align %q", value)
+				}
+			case "style":
+				if value != "text-align:left" && value != "text-align:center" && value != "text-align:right" {
+					return fmt.Errorf("style %q", value)
+				}
+			case "type":
+				if value != "checkbox" {
+					return fmt.Errorf("type %q", value)
+				}
 			case "start":
 				if strings.Trim(value, "0123456789") != "" {
 					return fmt.Errorf("start %q", value)
@@ -66,7 +81,7 @@ func checkSafeURL(url string) error {
 		return nil
 	}
 	switch strings.ToLower(head) {
-	case "http", "https", "mailto":
+	case "http", "https", "mailto", "tel":
 		return nil
 	}
 	if head == "" || strings.ContainsAny(head, "%@!$&'()*,;=~_") || head[0] >= '0' && head[0] <= '9' ||
@@ -117,7 +132,7 @@ func TestSafeByDefault(t *testing.T) {
 		}
 		inputs = append(inputs, string(b))
 	}
-	for _, conv := range []*Converter{defaultConverter, New(Config{RawHTML: RawHTMLOmit, HeadingIDs: true})} {
+	for _, conv := range []*Converter{defaultConverter, fuzzCommonMark, fuzzStrict} {
 		for _, in := range inputs {
 			out, err := conv.Render([]byte(in))
 			if err != nil {
@@ -189,7 +204,9 @@ func TestSchemes(t *testing.T) {
 		{"[a](&#106;avascript:alert(1))", dropped},
 		{"[a](javascript\\:alert(1))", dropped},
 		{"[a](ftp://example.com)", dropped},
-		{"[a](tel:+48123456789)", dropped},
+		{"[a](tel:+48123456789)", link("tel:+48123456789")},
+		{"[a](TEL:+48-123-456-789)", link("TEL:+48-123-456-789")},
+		{"[a](sms:+48123456789)", dropped},
 		{"[a](data:text/plain,x)", dropped},
 		{"[*a*](x-y.z+w:b \"t\")", "<p><em>a</em></p>\n"},
 		{"<ftp://example.com>", "<p>ftp://example.com</p>\n"},
@@ -203,10 +220,11 @@ func TestSchemes(t *testing.T) {
 		}
 	}
 
-	custom := New(Config{Schemes: []string{"FTP", "tel:"}})
+	custom := New(Config{Schemes: []string{"FTP", "sms:"}})
 	for in, want := range map[string]string{
 		"[a](ftp://x)":   link("ftp://x"),
-		"[a](Tel:+48)":   link("Tel:+48"),
+		"[a](Sms:+48)":   link("Sms:+48"),
+		"[a](tel:+48)":   dropped,
 		"[a](https://x)": dropped,
 		"[a](/x)":        link("/x"),
 	} {

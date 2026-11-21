@@ -37,18 +37,19 @@ kolumnę „Stan” w `docs/roadmap.md`.
 
 ## Jak pracujemy
 
-- etapy w kolejności z `docs/roadmap.md`; etapy 0–3 są gotowe (K1: 652/652; K6: `TestSafeByDefault`),
-  **następny krok: etap 4** (GFM: tabele, przekreślenie, listy zadań, rozszerzone autolinki, filtr znaczników),
-  zaczynany od `requirements/gfm.md`; API według ADR 0005 (`New(Config).Parse(src).HTML()`), polityka
-  bezpieczeństwa według ADR 0006;
+- etapy w kolejności z `docs/roadmap.md`; etapy 0–4 są gotowe (K1: 652/652; K2: 24/24; K6: `TestSafeByDefault`),
+  **następny krok: etap 5** (punkty rozszerzeń: renderer bloku według języka, odwołania w wierszu, bloki uwag,
+  przypisy, publiczne drzewo dokumentu), zaczynany od `requirements/extensions.md` i od decyzji w pytaniach 3 i 4;
+  API według ADR 0005 (`New(Config).Parse(src).HTML()`), polityka bezpieczeństwa według ADR 0006, rozszerzenia
+  według ADR 0007 i 0008 (`gfm.go`): GFM domyślnie włączone, `Config.Disable` wyłącza;
 - układ kodu: `block.go` (faza 1, wiersz po wierszu), `inline.go` (faza 2, stos ograniczników i stos nawiasów),
   `links.go`, `htmltag.go`, `escape.go` (skanery wspólne), `render.go` (przejście iteracyjne); każde wyszukiwanie
   w przód, które może zawieść, musi zapamiętać niepowodzenie, a każdy nowy przypadek złośliwy trafia do
   `TestPathological`;
 - miara postępu: `go test -v -run TestSpec .`; listy zaliczonych przykładów `testdata/spec/passing-*.txt` przepisuje
   `go test -update .` (opis w `docs/testing.md`); porównanie z odniesieniem: `tools/compare`;
-- pytania otwarte w `docs/adr/open-questions.md`: 8 (szczegóły trybu bezpiecznego, przyjęte roboczo) do
-  potwierdzenia, 3 i 4 przed etapem 5; pytanie 2 (licencja) nie blokuje pracy;
+- pytania otwarte w `docs/adr/open-questions.md`: 8 (pozostałe wybory robocze z ADR 0006 i 0007)
+  do potwierdzenia, 3 i 4 przed etapem 5; pytanie 2 (licencja) nie blokuje pracy;
 - wymagania piszemy razem z etapem, w plikach według prefiksów z `requirements/README.md`;
 - najpierw test (przykład specyfikacji albo plik korpusu), potem kod; liczba zaliczonych przykładów nie spada między
   commitami bez wpisu, dlaczego;

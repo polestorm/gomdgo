@@ -8,7 +8,11 @@ import (
 	"unicode/utf8"
 )
 
-var fuzzStrict = New(Config{RawHTML: RawHTMLOmit, Schemes: []string{}, HeadingIDs: true})
+var fuzzStrict = New(Config{RawHTML: RawHTMLOmit, Schemes: []string{}, HeadingIDs: true,
+	SingleTilde: true, TableAlignStyle: true})
+
+// fuzzCommonMark: czysty CommonMark przy ustawieniach bezpiecznych.
+var fuzzCommonMark = New(Config{Disable: GFM})
 
 // REQ: DET-001 SAFE-005
 func FuzzRender(f *testing.F) {
@@ -23,6 +27,13 @@ func FuzzRender(f *testing.F) {
 		out := Render(src)
 		if err := checkSafe(out); err != nil {
 			t.Fatalf("unsafe or malformed output: %v\nsource: %q\noutput: %q", err, src, out)
+		}
+		plain, _ := fuzzCommonMark.Render(src)
+		if err := checkSafe(plain); err != nil {
+			t.Fatalf("unsafe or malformed output (extensions disabled): %v\nsource: %q\noutput: %q", err, src, plain)
+		}
+		if raw := renderWith(gfmSpecConverter, string(src)); !utf8.Valid(raw) || bytes.IndexByte(raw, 0) >= 0 {
+			t.Fatalf("raw HTML output with GFM is not valid UTF-8 or contains U+0000\nsource: %q\noutput: %q", src, raw)
 		}
 		strict, _ := fuzzStrict.Render(src)
 		if err := checkSafe(strict); err != nil {

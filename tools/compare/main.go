@@ -30,6 +30,15 @@ type multiFlag []string
 func (m *multiFlag) String() string     { return strings.Join(*m, ",") }
 func (m *multiFlag) Set(v string) error { *m = append(*m, v); return nil }
 
+// extenders łączy kilka rozszerzeń goldmark w jedno.
+type extenders []goldmark.Extender
+
+func (e extenders) Extend(m goldmark.Markdown) {
+	for _, x := range e {
+		x.Extend(m)
+	}
+}
+
 // input to jeden dokument korpusu różnicowego.
 type input struct {
 	name     string
@@ -50,6 +59,7 @@ func main() {
 	var specs multiFlag
 	flag.Var(&specs, "spec", "plik specyfikacji z przykładami (można podać kilka razy)")
 	safe := flag.Bool("safe", false, "porównaj tryby bezpieczne: surowy HTML pomijany, adresy filtrowane")
+	refAlign := flag.String("refalign", "attribute", "attribute: odniesienie zapisuje wyrównanie kolumn jak specyfikacja; style: odniesienie przy ustawieniach domyślnych, a gomdgo z opcjami zgodności")
 	outDir := flag.String("out", "", "katalog na raport różnic (poza repozytorium, np. ../../out/compare)")
 	flag.Parse()
 
@@ -57,14 +67,33 @@ func main() {
 	// specyfikacji. Tryb -safe: oba pomijają surowy HTML i filtrują adresy, każdy po swojemu; goldmark
 	// zostawia w miejscu pominiętego HTML komentarz, który przed porównaniem usuwamy.
 	var rendererOptions []renderer.Option
-	conv := gomdgo.New(gomdgo.Config{RawHTML: gomdgo.RawHTMLPass, AnyScheme: true})
+	cfg := gomdgo.Config{RawHTML: gomdgo.RawHTMLPass, AnyScheme: true}
 	if *safe {
-		conv = gomdgo.New(gomdgo.Config{RawHTML: gomdgo.RawHTMLOmit})
-	} else {
+		cfg = gomdgo.Config{RawHTML: gomdgo.RawHTMLOmit}
+	}
+	plainCfg := cfg
+	plainCfg.Disable = gomdgo.GFM // przykłady CommonMark: bez rozszerzeń po obu stronach
+	conv := gomdgo.New(plainCfg)
+	if *refAlign == "style" {
+		// Odniesienie przy ustawieniach domyślnych: po naszej stronie opcje zgodności (ADR 0008).
+		cfg.SingleTilde, cfg.TableAlignStyle = true, true
+	}
+	convGFM := gomdgo.New(cfg)
+	if !*safe {
 		rendererOptions = append(rendererOptions, html.WithUnsafe())
 	}
 	plain := goldmark.New(goldmark.WithRendererOptions(rendererOptions...))
-	gfm := goldmark.New(goldmark.WithExtensions(extension.GFM), goldmark.WithRendererOptions(rendererOptions...))
+	// Wyrównanie kolumn tabeli goldmark zapisuje domyślnie w atrybucie style; specyfikacja GFM i gomdgo
+	// w atrybucie align. Z -refalign=attribute odniesienie robi to samo, żeby ta jedna różnica nie
+	// zasłaniała pozostałych; -refalign=style mierzy odniesienie przy jego ustawieniach domyślnych.
+	gfmExtension := goldmark.Extender(extension.GFM)
+	if *refAlign == "attribute" {
+		gfmExtension = extenders{
+			extension.NewTable(extension.WithTableCellAlignMethod(extension.TableCellAlignAttribute)),
+			extension.Strikethrough, extension.Linkify, extension.TaskList,
+		}
+	}
+	gfm := goldmark.New(goldmark.WithExtensions(gfmExtension), goldmark.WithRendererOptions(rendererOptions...))
 
 	var inputs []input
 	var groups []string
@@ -124,7 +153,11 @@ func main() {
 		if err := md.Convert([]byte(in.markdown), &buf); err != nil {
 			fatal(fmt.Errorf("%s: reference parser: %w", in.name, err))
 		}
-		rendered, err := conv.Render([]byte(in.markdown))
+		ourConv := conv
+		if in.gfm {
+			ourConv = convGFM
+		}
+		rendered, err := ourConv.Render([]byte(in.markdown))
 		if err != nil {
 			fatal(fmt.Errorf("%s: gomdgo: %w", in.name, err))
 		}

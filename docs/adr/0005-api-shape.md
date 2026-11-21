@@ -23,7 +23,8 @@ html, err := conv.Render(src)          // skrót: Parse + HTML
 html := gomdgo.Render(src)             // skrót: ustawienia domyślne, bez błędu
 ```
 
-1. `Config` jest zwykłą strukturą; wartość zerowa to ustawienia domyślne, bezpieczne. Pola opisują **co** ma być
+1. `Config` jest zwykłą strukturą; wartość zerowa to ustawienia domyślne: bezpieczne, z rozszerzeniami GFM
+   (ADR 0007). Pola opisują **co** ma być
    w wyniku, a nie jak działa parser.
 2. `Converter` po utworzeniu jest niezmienny (kopiuje listy z `Config`) i bezpieczny dla wielu gorutyn.
 3. `Parse` nie zwraca błędu: każdy ciąg bajtów jest jakimś dokumentem Markdown (ADR 0004 dla niepoprawnego UTF-8).

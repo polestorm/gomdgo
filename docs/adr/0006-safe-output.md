@@ -1,6 +1,6 @@
 # 0006 Wynik bezpieczny z konstrukcji
 
-Status: przyjęta (robocza: punkty 2–4 to wybory wykonawcy, do potwierdzenia przez właściciela) · 2026-11-21
+Status: przyjęta (punkt 3: decyzja właściciela; punkty 2 i 4 to wybory wykonawcy, do potwierdzenia) · 2026-11-21
 
 ## Kontekst
 
@@ -13,7 +13,8 @@ dozwolonych schematów; osobny sanityzator nie jest potrzebny. Etap 3 musiał ro
    `RawHTMLOmit` pomija, `RawHTMLPass` przepuszcza bez zmian.
 2. **Blok HTML jako tekst zachowuje się jak akapit**: dostaje `<p>`, a w liście zwartej jest samym tekstem.
    Czytelnik widzi, co autor wpisał; struktura dokumentu zostaje poprawna.
-3. **Lista domyślna schematów to `http`, `https`, `mailto`.** Adres bez schematu (względny, `#fragment`,
+3. **Lista domyślna schematów to `http`, `https`, `mailto`, `tel`** (potwierdzona przez właściciela
+   2026-11-21; `tel` dopisany na jego decyzję, `ftp` i `data` świadomie poza listą). Adres bez schematu (względny, `#fragment`,
    `//host`) jest dozwolony zawsze. To lista dozwolonych, nie zakazanych: nowy niebezpieczny schemat nie wymaga
    zmiany biblioteki. `data:` nie jest dozwolony domyślnie także dla obrazów; odbiorca może go dopisać.
 4. **Adres o niedozwolonym schemacie znika razem ze znacznikiem**: odnośnik zostaje samą swoją treścią, obraz samym
@@ -32,6 +33,6 @@ dozwolonych schematów; osobny sanityzator nie jest potrzebny. Etap 3 musiał ro
 + kryterium K6 ma test (`TestSafeByDefault`) i stały sprawdzian w `FuzzRender`;
 + ustawienia niebezpieczne (`RawHTMLPass`, `AnyScheme`) są jawne i nazwane;
 − tryb bezpieczny różni się od `goldmark`, który stosuje listę schematów zakazanych i zostawia `href=""`:
-  różnice są w `../differences.md`; odnośniki `tel:`, `ftp:`, `irc:` wymagają dopisania schematu przez odbiorcę;
+  różnice są w `../differences.md`; odnośniki `ftp:`, `irc:`, `sms:` wymagają dopisania schematu przez odbiorcę;
 − adres w postaci `host:port/ścieżka` bez `//` jest odczytywany jako schemat `host` i odrzucany, tak jak
   odczytałaby go przeglądarka.

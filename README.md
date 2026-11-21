@@ -2,14 +2,17 @@
 
 Markdown → HTML in pure Go, written from the specifications, with no dependencies outside the standard library.
 
-**Status: CommonMark complete and safe by default; GFM extensions next.** All 652 examples of the CommonMark
-0.31.2 specification pass byte for byte. Raw HTML is escaped and link destinations are checked against a scheme
-allow-list unless the caller opts out. The GFM extensions and the extension points are not implemented yet.
+**Status: CommonMark and the GFM extensions complete, safe by default; extension points next.** All 652 examples
+of the CommonMark 0.31.2 specification and all 24 examples of the GFM 0.29 extension sections pass byte for byte.
+Raw HTML is escaped and link destinations are checked against a scheme allow-list unless the caller opts out.
+The GFM extensions are on by default; `Config.Disable` turns them off one by one (`gomdgo.GFM` for plain
+CommonMark). The extension
+points (code block renderers, inline references, the public document tree) are not implemented yet.
 
 ## Usage
 
 ```go
-html := gomdgo.Render(src) // safe defaults, never fails
+html := gomdgo.Render(src) // CommonMark + GFM, safe defaults, never fails
 
 conv := gomdgo.New(gomdgo.Config{RawHTML: gomdgo.RawHTMLOmit, HeadingIDs: true})
 doc := conv.Parse(src)   // never fails; a validator can inspect the document here

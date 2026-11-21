@@ -19,12 +19,19 @@ const (
 	gfmSpec        = "testdata/spec/gfm-0.29.txt"
 )
 
-// specConverter odpowiada założeniom przykładów specyfikacji: surowy HTML przechodzi bez zmian, a schemat
-// adresu nie jest sprawdzany.
-var specConverter = New(Config{RawHTML: RawHTMLPass, AnyScheme: true})
+// specConverter odpowiada założeniom przykładów specyfikacji CommonMark: bez rozszerzeń, surowy HTML przechodzi
+// bez zmian, a schemat adresu nie jest sprawdzany.
+var specConverter = New(Config{RawHTML: RawHTMLPass, AnyScheme: true, Disable: GFM})
+
+// gfmSpecConverter: to samo z rozszerzeniami GFM, dla przykładów z rozdziałów rozszerzeń.
+var gfmSpecConverter = New(Config{RawHTML: RawHTMLPass, AnyScheme: true})
 
 func renderSpec(markdown string) []byte {
-	out, err := specConverter.Render([]byte(markdown))
+	return renderWith(specConverter, markdown)
+}
+
+func renderWith(conv *Converter, markdown string) []byte {
+	out, err := conv.Render([]byte(markdown))
 	if err != nil {
 		panic(err)
 	}
@@ -42,7 +49,7 @@ func loadSpec(t testing.TB, path string) []spectest.Example {
 
 // TestSpecCommonMark mierzy kryterium K1: wszystkie przykłady CommonMark 0.31.2.
 func TestSpecCommonMark(t *testing.T) {
-	runSpec(t, loadSpec(t, commonMarkSpec), "testdata/spec/passing-commonmark.txt")
+	runSpec(t, specConverter, loadSpec(t, commonMarkSpec), "testdata/spec/passing-commonmark.txt")
 }
 
 // TestSpecGFM mierzy kryterium K2: przykłady z rozdziałów rozszerzeń GFM 0.29-gfm. Część wspólną z CommonMark
@@ -54,13 +61,13 @@ func TestSpecGFM(t *testing.T) {
 			ext = append(ext, e)
 		}
 	}
-	runSpec(t, ext, "testdata/spec/passing-gfm.txt")
+	runSpec(t, gfmSpecConverter, ext, "testdata/spec/passing-gfm.txt")
 }
 
 // runSpec renderuje przykłady i porównuje wynik co do bajta. Przykład, który jeszcze nie przechodzi, nie psuje
 // testu; psuje go przykład zapisany na liście zaliczonych, który przestał przechodzić. Dzięki temu liczba
 // zaliczonych nie może spaść niezauważenie: spadek wymaga zmiany pliku listy, widocznej w przeglądzie.
-func runSpec(t *testing.T, examples []spectest.Example, passingFile string) {
+func runSpec(t *testing.T, conv *Converter, examples []spectest.Example, passingFile string) {
 	recorded := readPassing(t, passingFile)
 	var passed []int
 	type count struct{ ok, all int }
@@ -74,7 +81,7 @@ func runSpec(t *testing.T, examples []spectest.Example, passingFile string) {
 			order = append(order, e.Section)
 		}
 		c.all++
-		got := string(renderSpec(e.Markdown))
+		got := string(renderWith(conv, e.Markdown))
 		if got == e.HTML {
 			c.ok++
 			passed = append(passed, e.Number)

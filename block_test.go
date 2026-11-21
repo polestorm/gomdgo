@@ -105,7 +105,7 @@ func TestInvalidUTF8(t *testing.T) {
 		}
 	}
 	// Pozycje odnoszą się do źródła po zamianie: wiersze bez zmian, kolumny za zamienionym bajtem przesunięte.
-	doc := parse(sanitize([]byte("\xff *a*\n\n# b\xff")))
+	doc := parse(sanitize([]byte("\xff *a*\n\n# b\xff")), 0)
 	want := "document 1:1\n  paragraph 1:1\n    text 1:1 \"\uFFFD \"\n    emph 1:5\n      text 1:6 \"a\"\n" +
 		"  heading 3:1\n    text 3:3 \"b\uFFFD\"\n"
 	if got := dumpTree(doc, true); got != want {
@@ -149,7 +149,7 @@ func TestReferenceDefinitions(t *testing.T) {
 		{"[" + strings.Repeat("a", 999) + "]: /url\n", []ref{{strings.Repeat("a", 999), "/url", ""}}, ""},
 	}
 	for _, c := range cases {
-		doc := parse([]byte(c.in))
+		doc := parse([]byte(c.in), 0)
 		if len(doc.refs) != len(c.want) {
 			t.Errorf("%q: got %d definitions, want %d", c.in, len(doc.refs), len(c.want))
 		}
@@ -165,7 +165,7 @@ func TestReferenceDefinitions(t *testing.T) {
 			t.Errorf("%q: got %q, want %q", c.in, got, c.rest)
 		}
 	}
-	if doc := parse([]byte("[" + strings.Repeat("a", 1000) + "]: /url\n")); len(doc.refs) != 0 {
+	if doc := parse([]byte("["+strings.Repeat("a", 1000)+"]: /url\n"), 0); len(doc.refs) != 0 {
 		t.Error("a label of 1000 characters must not be accepted")
 	}
 }
@@ -176,7 +176,7 @@ func dumpTree(doc *document, inlines bool) string {
 	var b strings.Builder
 	var walk func(n *node, depth int)
 	walk = func(n *node, depth int) {
-		if n.kind >= kindText && !inlines {
+		if n.kind >= kindText && n.kind < kindTable && !inlines {
 			return
 		}
 		line, col := doc.position(n.pos)
@@ -233,7 +233,7 @@ func TestBlockPositions(t *testing.T) {
   heading 16:1
   html_block 18:1
 `
-	doc := parse([]byte(src))
+	doc := parse([]byte(src), 0)
 	if got := dumpTree(doc, false); got != want {
 		t.Errorf("tree:\n%s\nwant:\n%s", got, want)
 	}
@@ -265,6 +265,9 @@ func TestCursorTabs(t *testing.T) {
 	}
 }
 
+// corpusConverter: korpus własny jest renderowany przy ustawieniach domyślnych (z rozszerzeniami GFM).
+var corpusConverter = defaultConverter
+
 // TestCorpus porównuje wynik dla plików korpusu własnego z plikami wzorcowymi; go test -update je przepisuje.
 func TestCorpus(t *testing.T) {
 	files, _ := filepath.Glob("testdata/corpus/*.md")
@@ -276,7 +279,7 @@ func TestCorpus(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		got := Render(src)
+		got, _ := corpusConverter.Render(src)
 		golden := strings.TrimSuffix(path, ".md") + ".html"
 		if *update {
 			if err := os.WriteFile(golden, got, 0o644); err != nil {
@@ -324,6 +327,7 @@ func TestPathological(t *testing.T) {
 		{"tabs", func(n int) string { return strings.Repeat("\t", n) + "a\n" }},
 	}
 	cases = append(cases, pathologicalInlines...)
+	cases = append(cases, pathologicalGFM...)
 	// Rozmiary różnią się 16 razy: wzrost liniowy to czynnik 16, kwadratowy 256. Próg 96 zostawia zapas
 	// na odśmiecanie pamięci, które przy małym rozmiarze jeszcze nie pracuje (pomiar w docs/testing.md).
 	const small, factor, slack = 10_000, 16, 6
@@ -335,7 +339,7 @@ func TestPathological(t *testing.T) {
 		for i := 0; i < runs; i++ {
 			runtime.GC()
 			start := time.Now()
-			Render(src)
+			corpusConverter.Render(src) // z rozszerzeniami GFM: obejmuje też ścieżki CommonMark
 			best = min(best, time.Since(start))
 		}
 		return best

@@ -15,10 +15,12 @@ import (
 // więc nie jest powtarzane (zamknięcie kodu w wierszu, komentarza, cudzysłowu w znaczniku).
 type inlineParser struct {
 	doc      *document
+	ext      Extension
 	parent   *node
 	text     []byte
 	spans    []span
 	lineOffs []int // dla tekstu z kilku wierszy: początek każdego wiersza w text
+	removed  []int // dla komórki tabeli: pozycje w text, przed którymi usunięto ukośnik ze źródła
 
 	delimTop *delim
 	brackets []bracket
@@ -60,7 +62,7 @@ type bracket struct {
 }
 
 var inlineSpecial = func() (t [256]bool) {
-	for _, c := range "\n\\`*_[]!<&" {
+	for _, c := range "\n\\`*_[]!<&~" {
 		t[c] = true
 	}
 	return
@@ -70,9 +72,24 @@ var inlineSpecial = func() (t [256]bool) {
 func (p *inlineParser) parse(n *node) {
 	src := p.doc.src
 	p.parent, p.spans = n, n.spans
-	p.lineOffs = p.lineOffs[:0]
+	p.lineOffs, p.removed = p.lineOffs[:0], p.removed[:0]
+	if len(n.spans) == 0 {
+		return // pusta komórka tabeli
+	}
 	if len(n.spans) == 1 {
 		p.text = src[n.spans[0].start:n.spans[0].end]
+		if n.kind == kindTableCell && bytes.Contains(p.text, []byte(`\|`)) {
+			// W komórce tabeli \| oznacza znak |, także wewnątrz kodu w wierszu.
+			text := make([]byte, 0, len(p.text))
+			for i := 0; i < len(p.text); i++ {
+				if p.text[i] == '\\' && i+1 < len(p.text) && p.text[i+1] == '|' {
+					p.removed = append(p.removed, len(text))
+					continue
+				}
+				text = append(text, p.text[i])
+			}
+			p.text = text
+		}
 	} else {
 		var text []byte
 		for i, s := range n.spans {
@@ -147,6 +164,21 @@ func (p *inlineParser) parse(n *node) {
 			i = closer + n
 			start = i
 
+		case '~':
+			n := 1
+			for i+n < len(text) && text[i+n] == c {
+				n++
+			}
+			// Przekreślenie to dokładnie dwie tyldy; z Config.SingleTilde także jedna.
+			if p.ext&Strikethrough == 0 || n > 2 || n == 1 && p.ext&extSingleTilde == 0 {
+				i += n
+				continue
+			}
+			flush(i)
+			p.pushDelim(i, n)
+			i += n
+			start = i
+
 		case '*', '_':
 			flush(i)
 			n := 1
@@ -218,11 +250,17 @@ func (p *inlineParser) parse(n *node) {
 	}
 	flush(len(text))
 	p.processEmphasis(nil)
+	if p.ext&Autolinks != 0 {
+		p.autolinks()
+	}
 }
 
 // pos zamienia pozycję w tekście akapitu na przesunięcie w źródle.
 func (p *inlineParser) pos(off int) int {
 	if len(p.spans) == 1 {
+		if len(p.removed) > 0 {
+			off += sort.SearchInts(p.removed, off+1)
+		}
 		return p.spans[0].start + off
 	}
 	k := sort.Search(len(p.lineOffs), func(k int) bool { return p.lineOffs[k] > off }) - 1
@@ -304,7 +342,7 @@ func (p *inlineParser) pushDelim(i, n int) {
 	left := after != 0 && (after != 1 || before != 2)
 	right := before != 0 && (before != 1 || after != 2)
 	d := &delim{ch: text[i], count: n, orig: n, prev: p.delimTop}
-	if d.ch == '*' {
+	if d.ch != '_' {
 		d.canOpen, d.canClose = left, right
 	} else {
 		d.canOpen = left && (!right || before == 1)
@@ -337,7 +375,7 @@ func (p *inlineParser) removeDelim(d *delim) {
 func (p *inlineParser) processEmphasis(bottom *delim) {
 	// Dolne granice szukania otwarcia, osobno dla znaku, zdolności zamknięcia do otwierania i długości
 	// serii modulo 3: poniżej granicy na pewno nie ma pasującego otwarcia.
-	var openersBottom [2][2][3]*delim
+	var openersBottom [3][2][3]*delim
 	for a := range openersBottom {
 		for b := range openersBottom[a] {
 			for c := range openersBottom[a][b] {
@@ -358,8 +396,11 @@ func (p *inlineParser) processEmphasis(bottom *delim) {
 			continue
 		}
 		a, b := 0, 0
-		if closer.ch == '_' {
+		switch closer.ch {
+		case '_':
 			a = 1
+		case '~':
+			a = 2
 		}
 		if closer.canOpen {
 			b = 1
@@ -371,7 +412,7 @@ func (p *inlineParser) processEmphasis(bottom *delim) {
 				continue
 			}
 			// Reguła „sumy podzielnej przez 3” dla serii, które mogą i otwierać, i zamykać.
-			if (opener.canClose || closer.canOpen) && (opener.orig+closer.orig)%3 == 0 &&
+			if closer.ch != '~' && (opener.canClose || closer.canOpen) && (opener.orig+closer.orig)%3 == 0 &&
 				(opener.orig%3 != 0 || closer.orig%3 != 0) {
 				continue
 			}
@@ -390,6 +431,9 @@ func (p *inlineParser) processEmphasis(bottom *delim) {
 		use, k := 1, kindEmph
 		if opener.count >= 2 && closer.count >= 2 {
 			use, k = 2, kindStrong
+		}
+		if closer.ch == '~' {
+			k = kindStrike // jedna tylda (Config.SingleTilde) i dwie dają to samo przekreślenie
 		}
 		opener.count -= use
 		closer.count -= use

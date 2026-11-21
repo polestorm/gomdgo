@@ -8,7 +8,7 @@ Szacunki z 2026-11-21, w godzinach pracy z asystentem. Kryteria zakończenia ca�
 | 1 | struktura bloków: wiersze i tabulatory, cytaty i listy (z kontynuacją leniwą), nagłówki ATX i setext, linia pozioma, kod przez wcięcie i ogrodzony, akapity, definicje odsyłaczy, bloki HTML (7 rodzajów) | 15–25 h | gotowy 2026-11-21 |
 | 2 | treść w wierszu: znaki ucieczki, encje, kod w wierszu, algorytm ograniczników (wyróżnienia), odnośniki i obrazy (w wierszu i referencyjne), autolinki, HTML w wierszu, łamanie wierszy | 15–25 h | gotowy 2026-11-21 |
 | 3 | renderer HTML i bezpieczeństwo: escapowanie, lista dozwolonych schematów, polityka surowego HTML (escapuj, pomiń, przepuść), identyfikatory nagłówków | 4–6 h | gotowy 2026-11-21 |
-| 4 | GFM: tabele, przekreślenie, listy zadań, rozszerzone autolinki, filtr znaczników | 8–12 h | — |
+| 4 | GFM: tabele, przekreślenie, listy zadań, rozszerzone autolinki, filtr znaczników | 8–12 h | gotowy 2026-11-21 |
 | 5 | punkty rozszerzeń: renderer bloku według języka, odwołania w wierszu, bloki uwag, przypisy, publiczne drzewo dokumentu dla walidatorów | 8–12 h | — |
 | 6 | utwardzanie: przypadki patologiczne, fuzzing, korpus różnicowy, `differences.md`, testy wydajności | 6–10 h | — |
 | 7 | odbiór: pomiar K1–K9, pakiet dowodów, próba przepięcia u odbiorcy na jego plikach wzorcowych | 3–5 h | — |
