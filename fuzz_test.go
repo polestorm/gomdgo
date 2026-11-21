@@ -8,7 +8,9 @@ import (
 	"unicode/utf8"
 )
 
-// REQ: DET-001
+var fuzzStrict = New(Config{RawHTML: RawHTMLOmit, Schemes: []string{}, HeadingIDs: true})
+
+// REQ: DET-001 SAFE-005
 func FuzzRender(f *testing.F) {
 	for _, path := range []string{commonMarkSpec, gfmSpec} {
 		for _, e := range loadSpec(f, path) {
@@ -19,13 +21,20 @@ func FuzzRender(f *testing.F) {
 	f.Add([]byte("\x00\xff<a href=\"x\">&amp;\r\n"))
 	f.Fuzz(func(t *testing.T, src []byte) {
 		out := Render(src)
-		if err := checkFragment(out); err != nil {
-			t.Fatalf("not a well-formed HTML fragment: %v\nsource: %q\noutput: %q", err, src, out)
+		if err := checkSafe(out); err != nil {
+			t.Fatalf("unsafe or malformed output: %v\nsource: %q\noutput: %q", err, src, out)
 		}
-		if utf8.Valid(src) && !utf8.Valid(out) {
-			t.Fatalf("valid UTF-8 in, invalid UTF-8 out\nsource: %q\noutput: %q", src, out)
+		strict, _ := fuzzStrict.Render(src)
+		if err := checkSafe(strict); err != nil {
+			t.Fatalf("unsafe or malformed output (raw HTML omitted, heading ids): %v\nsource: %q\noutput: %q", err, src, strict)
 		}
-		RenderWith(src, Options{UnsafeHTML: true}) // bez sprawdzania wyniku: surowy HTML nie musi być poprawny
+		if !utf8.Valid(out) || bytes.IndexByte(out, 0) >= 0 {
+			t.Fatalf("output is not valid UTF-8 or contains U+0000\nsource: %q\noutput: %q", src, out)
+		}
+		// Z przepuszczaniem surowego HTML wynik nie musi być poprawnym fragmentem, ale kodowanie musi.
+		if raw := renderSpec(string(src)); !utf8.Valid(raw) || bytes.IndexByte(raw, 0) >= 0 {
+			t.Fatalf("raw HTML output is not valid UTF-8 or contains U+0000\nsource: %q\noutput: %q", src, raw)
+		}
 		if again := Render(src); !bytes.Equal(out, again) {
 			t.Fatalf("output differs between calls\nsource: %q", src)
 		}
@@ -73,6 +82,19 @@ var voidElements = map[string]bool{"br": true, "hr": true, "img": true, "input":
 // naszego własnego wyniku, a nie parser HTML: przyjmuje tylko zapis, który renderer ma prawo wytworzyć
 // (atrybuty w cudzysłowach, znaczniki domknięte jawnie, elementy puste z listy).
 func checkFragment(out []byte) error {
+	_, err := scanFragment(out)
+	return err
+}
+
+// tagInfo to znacznik otwierający znaleziony w wyniku, z atrybutami w kolejności zapisu.
+type tagInfo struct {
+	name  string
+	attrs [][2]string
+}
+
+// scanFragment sprawdza fragment jak checkFragment i zwraca jego znaczniki otwierające.
+func scanFragment(out []byte) ([]tagInfo, error) {
+	var tags []tagInfo
 	var stack []string
 	s := string(out)
 	for i := 0; i < len(s); {
@@ -80,13 +102,13 @@ func checkFragment(out []byte) error {
 		case '&':
 			end := strings.IndexByte(s[i:], ';')
 			if end < 2 || end > 34 || !isReference(s[i+1:i+end]) {
-				return fmt.Errorf("offset %d: bare ampersand", i)
+				return nil, fmt.Errorf("offset %d: bare ampersand", i)
 			}
 			i += end + 1
 		case '<':
-			end, err := checkTag(s, i, &stack)
+			end, err := checkTag(s, i, &stack, &tags)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			i = end
 		default:
@@ -94,9 +116,9 @@ func checkFragment(out []byte) error {
 		}
 	}
 	if len(stack) > 0 {
-		return fmt.Errorf("unclosed elements: %v", stack)
+		return nil, fmt.Errorf("unclosed elements: %v", stack)
 	}
-	return nil
+	return tags, nil
 }
 
 func isReference(name string) bool {
@@ -125,7 +147,7 @@ func isName(s string) bool {
 }
 
 // checkTag sprawdza znacznik zaczynający się w s[i] i zwraca pozycję za nim.
-func checkTag(s string, i int, stack *[]string) (int, error) {
+func checkTag(s string, i int, stack *[]string, tags *[]tagInfo) (int, error) {
 	bad := func(msg string) (int, error) { return 0, fmt.Errorf("offset %d: %s", i, msg) }
 	j := i + 1
 	closing := j < len(s) && s[j] == '/'
@@ -151,6 +173,8 @@ func checkTag(s string, i int, stack *[]string) (int, error) {
 		*stack = st[:len(st)-1]
 		return j + 1, nil
 	}
+	info := tagInfo{name: name}
+	defer func() { *tags = append(*tags, info) }()
 	for {
 		if j >= len(s) {
 			return bad("unterminated tag")
@@ -176,6 +200,7 @@ func checkTag(s string, i int, stack *[]string) (int, error) {
 		if !isName(s[start:j]) || !strings.HasPrefix(s[j:], `="`) {
 			return bad("attribute without a quoted value")
 		}
+		attrName := s[start:j]
 		end := strings.IndexByte(s[j+2:], '"')
 		if end < 0 {
 			return bad("unterminated attribute value")
@@ -183,6 +208,7 @@ func checkTag(s string, i int, stack *[]string) (int, error) {
 		if strings.ContainsAny(s[j+2:j+2+end], "<>") {
 			return bad("unescaped angle bracket in attribute value")
 		}
+		info.attrs = append(info.attrs, [2]string{attrName, s[j+2 : j+2+end]})
 		j += 2 + end + 1
 	}
 	if !voidElements[name] {

@@ -8,14 +8,15 @@
 | wymagania | `requirements/*.md`, `TestRequirementsCovered` | każde wymaganie ma test albo plik korpusu; każde odwołanie `REQ:` wskazuje istniejące wymaganie |
 | korpus własny | `testdata/corpus/*.md` + `*.html`, `TestCorpus` | dokumenty z polskimi znakami, rozszerzenia, punkty rozszerzeń; zmiana wzorca przez `go test -update` i przegląd różnicy; wymagania wskazuje pierwszy wiersz `[//]: # (REQ: …)`, który jest definicją odsyłacza i nie daje wyniku |
 | różnicowe | `tools/compare` (osobny moduł) | ten sam korpus przez `gomdgo` i `goldmark`; raport różnic po normalizacji HTML; każda różnica w `differences.md` |
-| bezpieczeństwo | `TestSafeByDefault` | przy ustawieniach domyślnych w wyniku nie ma surowego HTML ze źródła ani adresów spoza listy schematów |
+| bezpieczeństwo | `TestSafeByDefault`, `TestRawHTMLPolicy`, `TestSchemes` | przy ustawieniach domyślnych w wyniku są wyłącznie znaczniki i atrybuty z zamkniętej listy i adresy z dozwolonym schematem; sprawdzian `checkSafe` jest niezależny od renderera i działa na przykładach specyfikacji, korpusie, liście ataków oraz w `FuzzRender` |
+| API | `TestConverterAPI`, `TestHeadingIDs` | dwa kroki `Parse` i `HTML`, powtarzalność i równoległość, identyfikatory nagłówków |
 | powtarzalność | `TestDeterministic` | kilka renderowań daje ten sam wynik |
 | odporność | `FuzzRender` | dowolne wejście: bez paniki, poprawny fragment HTML (`checkFragment`), wynik powtarzalny; ziarna: wszystkie przykłady obu specyfikacji |
 | patologiczne | `TestPathological` | głębokie zagnieżdżenia, długie serie ograniczników i nawiasów, wiele odsyłaczy: czas rośnie liniowo (porównanie dwóch rozmiarów różniących się 16 razy) |
 | drzewo i pozycje | `TestBlockPositions`, `TestInlinePositions`, `TestReferenceDefinitions` | rodzaje węzłów z wierszem i kolumną (ADR 0003); zapisane definicje odsyłaczy |
 | wydajność | `BenchmarkCorpus` | porównanie z `goldmark` (kryterium K7) |
 
-Stan po etapie 2: nie ma jeszcze warstw „bezpieczeństwo” (etap 3) i „wydajność” (etap 6). `TestPathological`
+Stan po etapie 3: nie ma jeszcze warstwy „wydajność” (etap 6). `TestPathological`
 obejmuje strukturę bloków (15 przypadków) i treść w wierszu (42 przypadki, lista `pathologicalInlines`).
 
 `TestPathological` mierzy czas, więc zależy od maszyny: odśmiecanie pamięci jest na czas pomiaru wyłączone,
@@ -68,9 +69,15 @@ Normalizacja uznaje za nieistotne: białe znaki przy znacznikach blokowych i ser
 kolejność i zapis atrybutów, `<br />` wobec `<br>`, znak zapisany wprost albo odwołaniem znakowym. Jej poprawność
 potwierdza pomiar: `goldmark` po normalizacji zalicza 652 z 652 przykładów CommonMark.
 
-Ustawienia odniesienia: `goldmark` z przepuszczaniem surowego HTML (`html.WithUnsafe()`), bo tego oczekują przykłady
-specyfikacji; dla rozdziałów rozszerzeń GFM z `extension.GFM`. `gomdgo` jest wołany z `Options{UnsafeHTML: true}`,
-żeby porównywać to samo. Porównanie w trybie domyślnym `gomdgo` (HTML escapowany) dojdzie w etapie 3.
+Dwa tryby porównania:
+
+- zwykły: `goldmark` z `html.WithUnsafe()`, `gomdgo` z `Config{RawHTML: RawHTMLPass, AnyScheme: true}`, bo tego
+  oczekują przykłady specyfikacji; dla rozdziałów rozszerzeń GFM `goldmark` ma `extension.GFM`;
+- `-safe`: `goldmark` z ustawieniami domyślnymi, `gomdgo` z `Config{RawHTML: RawHTMLOmit}`; komentarz, który
+  `goldmark` wstawia w miejscu pominiętego HTML, jest usuwany przed normalizacją. Zgodności ze specyfikacją
+  w tym trybie się nie liczy.
+
+Polityki domyślnej `gomdgo` (`RawHTMLEscape`) nie da się porównać z `goldmark`, bo ten jej nie ma.
 
 ## Pomiary
 
@@ -82,7 +89,8 @@ po normalizacji.
 |---|---|---|---|---|---|
 | 2026-11-21 | `cc7051d` (etap 0) | 80 / 652 | 1 / 24 | 88 / 676 (13,0%), `goldmark` v1.8.7 | zaślepka `Render` bez parsera: wynik przypadkowy, poziom zerowy miary; fuzzing 20 s (2,9 mln wywołań) bez błędu |
 | 2026-11-21 | `41b1f76` (etap 1) | 343 / 652 | 2 / 24 | 345 / 676 (51,0%) na przykładach specyfikacji; korpus własny 4 / 4; `goldmark` v1.8.7 | struktura bloków bez treści w wierszu; rozdziały Tabs, Precedence, Indented code blocks, Blank lines, Block quotes, List items i Lists zaliczone w całości (124 / 124), w pozostałych rozdziałach blokowych brakuje tylko przykładów wymagających treści w wierszu; fuzzing łącznie 125 s bez błędu |
-| 2026-11-21 | etap 2, przed commitem | **652 / 652** | 2 / 24 | 654 / 676 (96,7%) na przykładach specyfikacji, w tym CommonMark 652 / 652; korpus własny 6 / 6; `goldmark` v1.8.7 | treść w wierszu; K1 spełnione przy porównaniu co do bajta; brakujące 22 przykłady to rozszerzenia GFM (etap 4); fuzzing łącznie 215 s (ok. 5 mln wywołań w ostatnim przebiegu) bez błędu |
+| 2026-11-21 | `a38663e` (etap 2) | **652 / 652** | 2 / 24 | 654 / 676 (96,7%) na przykładach specyfikacji, w tym CommonMark 652 / 652; korpus własny 6 / 6; `goldmark` v1.8.7 | treść w wierszu; K1 spełnione przy porównaniu co do bajta; brakujące 22 przykłady to rozszerzenia GFM (etap 4); fuzzing łącznie 215 s (ok. 5 mln wywołań w ostatnim przebiegu) bez błędu |
+| 2026-11-21 | etap 3, przed commitem | 652 / 652 | 2 / 24 | tryb zwykły: 654 / 676 (96,7%), CommonMark 652 / 652, korpus 6 / 6; tryb `-safe`: CommonMark 648 / 652 (99,4%), korpus 6 / 6; `goldmark` v1.8.7 | API z ADR 0005, polityka surowego HTML, lista schematów, identyfikatory nagłówków, niepoprawny UTF-8 (ADR 0004); 4 różnice trybu bezpiecznego to wpis 1 w `differences.md`; fuzzing łącznie 315 s, od tego etapu ze sprawdzianem bezpieczeństwa (7 mln wywołań w ostatnim przebiegu), bez błędu |
 
 Pomiar samego odniesienia, 2026-11-21, `goldmark` v1.8.7, po normalizacji: CommonMark 652 / 652; rozszerzenia GFM
 22 / 24. Dwa odstępstwa od specyfikacji GFM są zapisane w `differences.md` jako zapowiedziane różnice.

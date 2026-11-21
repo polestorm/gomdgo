@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 type renderer struct {
 	doc  *document
-	opts Options
+	conv *Converter
 	out  bytes.Buffer
+	ids  map[string]bool // identyfikatory nagłówków użyte w tym przebiegu
 }
 
 // cr zaczyna nowy wiersz wyniku, jeśli bieżący nie jest pusty.
@@ -78,7 +80,13 @@ func (r *renderer) enter(n *node) bool {
 		}
 	case kindHeading:
 		r.cr()
-		out.WriteString("<h" + strconv.Itoa(n.level) + ">")
+		out.WriteString("<h" + strconv.Itoa(n.level))
+		if r.conv.cfg.HeadingIDs {
+			out.WriteString(` id="`)
+			escapeHTML(out, []byte(r.headingID(n)))
+			out.WriteByte('"')
+		}
+		out.WriteByte('>')
 	case kindThematicBreak:
 		r.cr()
 		out.WriteString("<hr />\n")
@@ -94,8 +102,26 @@ func (r *renderer) enter(n *node) bool {
 		escapeHTML(out, n.literal)
 		out.WriteString("</code></pre>\n")
 	case kindHTMLBlock:
-		r.cr()
-		r.rawHTML(n.literal)
+		switch r.conv.cfg.RawHTML {
+		case RawHTMLPass:
+			r.cr()
+			out.Write(n.literal)
+		case RawHTMLOmit:
+		default:
+			// Blok HTML jako tekst zachowuje się jak akapit, także w liście zwartej.
+			text := bytes.TrimRight(n.literal, "\n")
+			if tightParagraph(n) {
+				if n.prev != nil {
+					r.cr()
+				}
+				escapeHTML(out, text)
+			} else {
+				r.cr()
+				out.WriteString("<p>")
+				escapeHTML(out, text)
+				out.WriteString("</p>\n")
+			}
+		}
 
 	case kindText:
 		escapeHTML(out, n.literal)
@@ -112,20 +138,35 @@ func (r *renderer) enter(n *node) bool {
 	case kindStrong:
 		out.WriteString("<strong>")
 	case kindLink:
-		out.WriteString(`<a href="`)
-		escapeHTML(out, encodeURL(n.info))
-		r.titleAttr(n)
-		out.WriteString(">")
+		// Odnośnik o niedozwolonym schemacie zostaje samą swoją treścią.
+		if r.conv.allowed(n.info) {
+			out.WriteString(`<a href="`)
+			escapeHTML(out, encodeURL(n.info))
+			r.titleAttr(n)
+			out.WriteString(">")
+		}
 	case kindImage:
-		out.WriteString(`<img src="`)
-		escapeHTML(out, encodeURL(n.info))
-		out.WriteString(`" alt="`)
-		r.plainText(n)
-		r.titleAttr(n)
-		out.WriteString(" />")
+		// Obraz o niedozwolonym schemacie zostaje samym swoim opisem.
+		alt := plainText(n)
+		if r.conv.allowed(n.info) {
+			out.WriteString(`<img src="`)
+			escapeHTML(out, encodeURL(n.info))
+			out.WriteString(`" alt="`)
+			escapeHTML(out, alt)
+			r.titleAttr(n)
+			out.WriteString(" />")
+		} else {
+			escapeHTML(out, alt)
+		}
 		return false
 	case kindHTMLInline:
-		r.rawHTML(n.literal)
+		switch r.conv.cfg.RawHTML {
+		case RawHTMLPass:
+			out.Write(n.literal)
+		case RawHTMLOmit:
+		default:
+			escapeHTML(out, n.literal)
+		}
 	}
 	return true
 }
@@ -140,27 +181,18 @@ func (r *renderer) titleAttr(n *node) {
 	}
 }
 
-// rawHTML zapisuje surowy HTML ze źródła zgodnie z ustawieniami.
-func (r *renderer) rawHTML(literal []byte) {
-	if r.opts.UnsafeHTML {
-		r.out.Write(literal)
-	} else {
-		// Tymczasowo: jako tekst. Politykę surowego HTML ustala etap 3.
-		escapeHTML(&r.out, literal)
-	}
-}
-
-// plainText zapisuje sam tekst poddrzewa (opis obrazu w atrybucie alt), bez znaczników.
-func (r *renderer) plainText(root *node) {
+// plainText zwraca sam tekst poddrzewa, bez znaczników: opis obrazu i podstawa identyfikatora nagłówka.
+func plainText(root *node) []byte {
+	var out []byte
 	if root.first == nil {
-		return
+		return out
 	}
 	for n := root.first; ; {
 		switch n.kind {
 		case kindText, kindCode:
-			escapeHTML(&r.out, n.literal)
+			out = append(out, n.literal...)
 		case kindSoftBreak, kindHardBreak:
-			r.out.WriteByte('\n')
+			out = append(out, '\n')
 		}
 		if n.first != nil {
 			n = n.first
@@ -168,11 +200,60 @@ func (r *renderer) plainText(root *node) {
 		}
 		for n.next == nil {
 			if n = n.parent; n == root {
-				return
+				return out
 			}
 		}
 		n = n.next
 	}
+}
+
+// headingID tworzy identyfikator nagłówka z jego tekstu: litery i cyfry małymi literami, odstępy jako
+// łączniki, reszta pominięta. Powtórzony identyfikator dostaje kolejny numer.
+func (r *renderer) headingID(n *node) string {
+	var b strings.Builder
+	for _, c := range string(plainText(n)) {
+		switch {
+		case unicode.IsLetter(c) || unicode.IsDigit(c):
+			b.WriteRune(unicode.ToLower(c))
+		case c == '-' || c == '_':
+			b.WriteRune(c)
+		case c == ' ' || c == '\t' || c == '\n':
+			b.WriteByte('-')
+		}
+	}
+	base := b.String()
+	if base == "" {
+		base = "section"
+	}
+	if r.ids == nil {
+		r.ids = map[string]bool{}
+	}
+	id := base
+	for i := 1; r.ids[id]; i++ {
+		id = base + "-" + strconv.Itoa(i)
+	}
+	r.ids[id] = true
+	return id
+}
+
+// allowed mówi, czy adres odnośnika albo obrazu może trafić do wyniku. Adres bez schematu jest dozwolony
+// zawsze; schemat to litera, a po niej litery, cyfry i znaki + . - aż do pierwszego dwukropka. Każdy inny
+// znak przed dwukropkiem (także taki, który zostanie zakodowany procentowo) oznacza adres względny.
+func (c *Converter) allowed(url string) bool {
+	if c.cfg.AnyScheme {
+		return true
+	}
+	for i := 0; i < len(url); i++ {
+		switch b := url[i]; {
+		case b == ':':
+			return i == 0 || c.schemes[strings.ToLower(url[:i])]
+		case isLetter(b):
+		case i > 0 && (isDigit(b) || b == '+' || b == '.' || b == '-'):
+		default:
+			return true
+		}
+	}
+	return true
 }
 
 // leave zapisuje koniec węzła, który ma znacznik zamykający.
@@ -196,6 +277,8 @@ func (r *renderer) leave(n *node) {
 	case kindStrong:
 		out.WriteString("</strong>")
 	case kindLink:
-		out.WriteString("</a>")
+		if r.conv.allowed(n.info) {
+			out.WriteString("</a>")
+		}
 	}
 }

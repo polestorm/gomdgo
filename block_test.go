@@ -81,6 +81,42 @@ func TestLineEndings(t *testing.T) {
 	}
 }
 
+// REQ: DET-004
+func TestInvalidUTF8(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"a\xffb", "<p>a\uFFFDb</p>\n"},
+		{"a\xff\xfe\xfdb", "<p>a\uFFFDb</p>\n"}, // seria niepoprawnych bajtów to jeden znak
+		{"za\xc5", "<p>za\uFFFD</p>\n"},         // urwana sekwencja na końcu
+		// bajty nie mogą złożyć się w znak ponad znacznikiem ani w opisie obrazu
+		{"\xc5*\x82*", "<p>\uFFFD<em>\uFFFD</em></p>\n"},
+		{"![\xc5*\x82*](u)", "<p><img src=\"u\" alt=\"\uFFFD\uFFFD\" /></p>\n"},
+		{"[a](/\xff)", "<p><a href=\"/%EF%BF%BD\">a</a></p>\n"},
+		{"[a](/\x00)", "<p><a href=\"/%EF%BF%BD\">a</a></p>\n"},
+		{"`\xff`", "<p><code>\uFFFD</code></p>\n"},
+		{"```\xff\n\xfe\n```", "<pre><code class=\"language-\uFFFD\">\uFFFD\n</code></pre>\n"},
+		{"\xed\xa0\x80", "<p>\uFFFD</p>\n"}, // surogat zakodowany jak w CESU-8
+		{"zażółć", "<p>zażółć</p>\n"},
+	}
+	for _, c := range cases {
+		for _, conv := range []*Converter{defaultConverter, specConverter} {
+			if got, _ := conv.Render([]byte(c.in)); string(got) != c.want {
+				t.Errorf("%q (%+v): got %q, want %q", c.in, conv.cfg, got, c.want)
+			}
+		}
+	}
+	// Pozycje odnoszą się do źródła po zamianie: wiersze bez zmian, kolumny za zamienionym bajtem przesunięte.
+	doc := parse(sanitize([]byte("\xff *a*\n\n# b\xff")))
+	want := "document 1:1\n  paragraph 1:1\n    text 1:1 \"\uFFFD \"\n    emph 1:5\n      text 1:6 \"a\"\n" +
+		"  heading 3:1\n    text 3:3 \"b\uFFFD\"\n"
+	if got := dumpTree(doc, true); got != want {
+		t.Errorf("tree:\n%s\nwant:\n%s", got, want)
+	}
+	valid := []byte("zażółć gęślą jaźń\n")
+	if got := sanitize(valid); &got[0] != &valid[0] {
+		t.Error("valid source must not be copied")
+	}
+}
+
 // REQ: BLK-010
 func TestReferenceDefinitions(t *testing.T) {
 	type ref struct{ label, dest, title string }

@@ -1,32 +1,110 @@
 package gomdgo
 
-import "bytes"
+import (
+	"bytes"
+	"strings"
+	"unicode/utf8"
+)
 
-// Options to ustawienia renderowania.
-//
-// Kształt tymczasowy: ostateczne API (opcje, punkty rozszerzeń, błędy funkcji wywołującego) wymaga decyzji
-// zapisanej jako pytanie 7 w docs/adr/open-questions.md.
-type Options struct {
-	// UnsafeHTML przepuszcza surowy HTML ze źródła bez zmian. Domyślnie HTML jest escapowany.
-	UnsafeHTML bool
+// RawHTML mówi, co zrobić z surowym HTML ze źródła (bloki HTML i znaczniki w wierszu).
+type RawHTML uint8
+
+const (
+	// RawHTMLEscape zapisuje surowy HTML jako tekst: czytelnik widzi znaczniki, przeglądarka ich nie wykonuje.
+	// To ustawienie domyślne.
+	RawHTMLEscape RawHTML = iota
+	// RawHTMLOmit pomija surowy HTML w wyniku.
+	RawHTMLOmit
+	// RawHTMLPass przepuszcza surowy HTML bez zmian. Wynik jest wtedy tak bezpieczny jak źródło.
+	RawHTMLPass
+)
+
+// Config to ustawienia konwertera. Wartość zerowa daje ustawienia domyślne, bezpieczne.
+type Config struct {
+	// RawHTML: polityka surowego HTML; domyślnie RawHTMLEscape.
+	RawHTML RawHTML
+
+	// Schemes: dozwolone schematy adresów odnośników i obrazów, bez dwukropka; wielkość liter nie ma znaczenia.
+	// nil oznacza listę domyślną (http, https, mailto); pusta lista dopuszcza tylko adresy bez schematu.
+	// Adresy bez schematu (względne, #fragment) są dozwolone zawsze.
+	Schemes []string
+
+	// AnyScheme wyłącza sprawdzanie schematów. Wynik jest wtedy tak bezpieczny jak źródło.
+	AnyScheme bool
+
+	// HeadingIDs dodaje nagłówkom atrybut id utworzony z ich tekstu, unikalny w dokumencie.
+	HeadingIDs bool
 }
 
-// Render zamienia źródło Markdown na fragment HTML przy ustawieniach domyślnych (bezpiecznych).
-//
-// Stan po etapie 2: pełny CommonMark 0.31.2. Surowy HTML ze źródła jest escapowany; adresy odnośników nie są
-// jeszcze sprawdzane względem listy dozwolonych schematów (etap 3).
-func Render(src []byte) []byte {
-	return RenderWith(src, Options{})
+// DefaultSchemes to schematy adresów dozwolone, gdy Config.Schemes jest nil.
+var DefaultSchemes = []string{"http", "https", "mailto"}
+
+// Converter zamienia Markdown na HTML według ustalonych ustawień. Po utworzeniu jest niezmienny i można
+// go używać z wielu gorutyn jednocześnie.
+type Converter struct {
+	cfg     Config
+	schemes map[string]bool
 }
 
-// RenderWith zamienia źródło Markdown na fragment HTML z podanymi ustawieniami.
-func RenderWith(src []byte, opts Options) []byte {
-	r := renderer{doc: parse(src), opts: opts}
-	r.render(r.doc.root)
-	out := r.out.Bytes()
-	if bytes.IndexByte(out, 0) >= 0 {
-		// Specyfikacja: znak U+0000 jest ze względów bezpieczeństwa zamieniany na U+FFFD.
-		out = bytes.ReplaceAll(out, []byte{0}, []byte("�"))
+// New tworzy konwerter. Nieznana wartość Config.RawHTML działa jak RawHTMLEscape.
+func New(cfg Config) *Converter {
+	c := &Converter{cfg: cfg, schemes: map[string]bool{}}
+	list := cfg.Schemes
+	if list == nil {
+		list = DefaultSchemes
 	}
+	for _, s := range list {
+		c.schemes[strings.ToLower(strings.TrimSuffix(s, ":"))] = true
+	}
+	c.cfg.Schemes = nil // lista wywołującego nie jest przechowywana; obowiązuje kopia w schemes
+	return c
+}
+
+var defaultConverter = New(Config{})
+
+// Render zamienia źródło Markdown na fragment HTML przy ustawieniach domyślnych. Nie zawodzi dla żadnego
+// wejścia: surowy HTML staje się tekstem, a odnośniki o niedozwolonym schemacie tracą adres.
+func Render(src []byte) []byte {
+	out, _ := defaultConverter.Parse(src).HTML() // bez punktów rozszerzeń błąd nie może powstać
 	return out
+}
+
+// Parse czyta źródło Markdown i zwraca dokument. Nie zawodzi dla żadnego wejścia: każdy ciąg bajtów jest
+// jakimś dokumentem Markdown.
+func (c *Converter) Parse(src []byte) *Document {
+	return &Document{conv: c, doc: parse(sanitize(src))}
+}
+
+// Render to skrót: Parse, a potem Document.HTML.
+func (c *Converter) Render(src []byte) ([]byte, error) {
+	return c.Parse(src).HTML()
+}
+
+// Document to sparsowany dokument: drzewo i definicje odsyłaczy. Jest niezmienny; HTML można wołać
+// wielokrotnie i z wielu gorutyn.
+//
+// Dostęp do drzewa dla walidatorów dojdzie w etapie 5 (pytanie 3 w docs/adr/open-questions.md).
+type Document struct {
+	conv *Converter
+	doc  *document
+}
+
+// HTML zapisuje dokument jako fragment HTML. Błąd może pochodzić wyłącznie z funkcji wywołującego
+// podłączonej w punkcie rozszerzenia (etap 5); do tego czasu jest zawsze nil.
+func (d *Document) HTML() ([]byte, error) {
+	r := renderer{doc: d.doc, conv: d.conv}
+	r.render(d.doc.root)
+	return r.out.Bytes(), nil
+}
+
+// sanitize zwraca źródło, w którym każdy znak U+0000 (wymóg specyfikacji) i każda seria bajtów niebędących
+// poprawnym UTF-8 (ADR 0004) są zastąpione znakiem U+FFFD. Poprawne źródło wraca bez kopiowania.
+func sanitize(src []byte) []byte {
+	if !utf8.Valid(src) {
+		src = bytes.ToValidUTF8(src, []byte("�"))
+	}
+	if bytes.IndexByte(src, 0) >= 0 {
+		src = bytes.ReplaceAll(src, []byte{0}, []byte("�"))
+	}
+	return src
 }

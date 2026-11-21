@@ -6,7 +6,7 @@ w `testdata/spec/passing-commonmark.txt`.
 
 | Id | Wymaganie |
 |---|---|
-| BLK-001 | Wiersz kończy się znakiem nowego wiersza, powrotu karetki albo parą obu; koniec źródła kończy ostatni wiersz. Znak U+0000 jest w wyniku zamieniany na U+FFFD. |
+| BLK-001 | Wiersz kończy się znakiem nowego wiersza, powrotu karetki albo parą obu; koniec źródła kończy ostatni wiersz. Znak U+0000 jest zamieniany na U+FFFD. |
 | BLK-002 | Tabulator w miejscu, w którym białe znaki wyznaczają strukturę bloków, działa jak dopełnienie do kolumny podzielnej przez 4; w treści zostaje tabulatorem. Część tabulatora niezużyta przez strukturę przechodzi do treści jako spacje (rozdział „Tabs”). |
 | BLK-003 | Struktura bloków ma pierwszeństwo przed strukturą treści w wierszu (rozdział „Precedence”). |
 | BLK-004 | Linia pozioma: co najmniej trzy jednakowe znaki `*`, `-` albo `_` z wcięciem do 3 spacji, z dowolnymi spacjami i tabulatorami między nimi; może przerwać akapit; ma pierwszeństwo przed elementem listy (rozdział „Thematic breaks”). |

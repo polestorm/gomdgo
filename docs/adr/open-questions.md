@@ -3,7 +3,9 @@
 Numery są stałe; pytania rozstrzygnięte znikają z listy, a decyzja jest w ADR.
 
 - pytanie 1 (przykłady specyfikacji w repozytorium) → rozstrzygnięte, `0002-spec-examples-in-repo.md`;
-- pytanie 5 (pozycje w źródle) → rozstrzygnięte, `0003-source-positions.md`.
+- pytanie 5 (pozycje w źródle) → rozstrzygnięte, `0003-source-positions.md`;
+- pytanie 6 (niepoprawny UTF-8 na wejściu) → rozstrzygnięte, `0004-invalid-utf8.md`;
+- pytanie 7 (sygnatura `Render`) → rozstrzygnięte, `0005-api-shape.md`.
 
 2. **Licencja `gomdgo`.** Repozytorium jest prywatne. Czy licencja jak w `gopdfgo` (Apache 2.0), czy zamknięta
    do czasu decyzji o udostępnieniu? Przy każdej z nich pliki w `testdata/spec/` zostają na CC BY-SA 4.0 (ADR 0002).
@@ -11,10 +13,6 @@ Numery są stałe; pytania rozstrzygnięte znikają z listy, a decyzja jest w AD
    czy tylko funkcję odwiedzającą z kodem rodzaju węzła i pozycją w źródle? Do rozstrzygnięcia przed etapem 5.
 4. **Przypisy i bloki uwag** nie mają specyfikacji. Czy przyjmujemy zachowanie GitHub opisane w jego dokumentacji
    użytkowej, czy własny opis w `requirements/` jako jedyne źródło? Do rozstrzygnięcia przed etapem 5.
-6. **Niepoprawny UTF-8 na wejściu.** Specyfikacja mówi tylko o U+0000 (zamiana na U+FFFD). Czy niepoprawne bajty
-   zamieniamy na U+FFFD, czy przepuszczamy bez zmian? Dziś `DET-001` wymaga jedynie braku paniki i poprawnego
-   UTF-8 w wyniku dla poprawnego wejścia; po etapie 1 niepoprawne bajty przechodzą bez zmian. Do rozstrzygnięcia
-   przed etapem 3.
-7. **Sygnatura `Render`.** Po etapie 1 są `Render([]byte) []byte` i tymczasowe `RenderWith(src, Options)`
-   z jedną opcją `UnsafeHTML` (potrzebną testom specyfikacji i `tools/compare`). Opcje (polityka HTML, schematy, punkty
-   rozszerzeń) i błędy funkcji wywołującego wymagają decyzji o kształcie API przed etapem 3.
+8. **Szczegóły trybu bezpiecznego** przyjęte roboczo w `0006-safe-output.md` (punkty 2–4): blok HTML jako tekst
+   w `<p>`; lista domyślna `http`, `https`, `mailto` (bez `tel`, `ftp`, `data`); odnośnik o niedozwolonym schemacie
+   zostaje samą treścią zamiast `href=""`. Do potwierdzenia albo zmiany przez właściciela.

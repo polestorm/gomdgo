@@ -19,6 +19,18 @@ const (
 	gfmSpec        = "testdata/spec/gfm-0.29.txt"
 )
 
+// specConverter odpowiada założeniom przykładów specyfikacji: surowy HTML przechodzi bez zmian, a schemat
+// adresu nie jest sprawdzany.
+var specConverter = New(Config{RawHTML: RawHTMLPass, AnyScheme: true})
+
+func renderSpec(markdown string) []byte {
+	out, err := specConverter.Render([]byte(markdown))
+	if err != nil {
+		panic(err)
+	}
+	return out
+}
+
 func loadSpec(t testing.TB, path string) []spectest.Example {
 	t.Helper()
 	ex, err := spectest.Load(path)
@@ -62,7 +74,7 @@ func runSpec(t *testing.T, examples []spectest.Example, passingFile string) {
 			order = append(order, e.Section)
 		}
 		c.all++
-		got := string(RenderWith([]byte(e.Markdown), Options{UnsafeHTML: true}))
+		got := string(renderSpec(e.Markdown))
 		if got == e.HTML {
 			c.ok++
 			passed = append(passed, e.Number)

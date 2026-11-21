@@ -37,17 +37,18 @@ kolumnę „Stan” w `docs/roadmap.md`.
 
 ## Jak pracujemy
 
-- etapy w kolejności z `docs/roadmap.md`; etapy 0–2 są gotowe (K1: 652/652), **następny krok: etap 3**
-  (renderer i bezpieczeństwo: lista dozwolonych schematów, polityka surowego HTML, identyfikatory nagłówków),
-  zaczynany od `requirements/safety.md` i od decyzji w pytaniach 6 i 7;
+- etapy w kolejności z `docs/roadmap.md`; etapy 0–3 są gotowe (K1: 652/652; K6: `TestSafeByDefault`),
+  **następny krok: etap 4** (GFM: tabele, przekreślenie, listy zadań, rozszerzone autolinki, filtr znaczników),
+  zaczynany od `requirements/gfm.md`; API według ADR 0005 (`New(Config).Parse(src).HTML()`), polityka
+  bezpieczeństwa według ADR 0006;
 - układ kodu: `block.go` (faza 1, wiersz po wierszu), `inline.go` (faza 2, stos ograniczników i stos nawiasów),
   `links.go`, `htmltag.go`, `escape.go` (skanery wspólne), `render.go` (przejście iteracyjne); każde wyszukiwanie
   w przód, które może zawieść, musi zapamiętać niepowodzenie, a każdy nowy przypadek złośliwy trafia do
   `TestPathological`;
 - miara postępu: `go test -v -run TestSpec .`; listy zaliczonych przykładów `testdata/spec/passing-*.txt` przepisuje
   `go test -update .` (opis w `docs/testing.md`); porównanie z odniesieniem: `tools/compare`;
-- pytania otwarte w `docs/adr/open-questions.md`: 6 (niepoprawny UTF-8) i 7 (sygnatura `Render`)
-  przed etapem 3, 3 i 4 przed etapem 5; pytanie 2 (licencja) nie blokuje pracy;
+- pytania otwarte w `docs/adr/open-questions.md`: 8 (szczegóły trybu bezpiecznego, przyjęte roboczo) do
+  potwierdzenia, 3 i 4 przed etapem 5; pytanie 2 (licencja) nie blokuje pracy;
 - wymagania piszemy razem z etapem, w plikach według prefiksów z `requirements/README.md`;
 - najpierw test (przykład specyfikacji albo plik korpusu), potem kod; liczba zaliczonych przykładów nie spada między
   commitami bez wpisu, dlaczego;

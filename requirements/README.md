@@ -11,6 +11,7 @@ test `TestRequirementsCovered` sprawdza pokrycie w obie strony.
 | `EXT` | `extensions.md` | punkty rozszerzeń, bloki uwag, przypisy |
 | `SAFE` | `safety.md` | escapowanie, schematy adresów, polityka surowego HTML |
 | `DET` | `determinism.md` | powtarzalność, czas liniowy, odporność |
+| `OUT` | `output.md` | publiczne API i postać wyniku poza specyfikacją (identyfikatory nagłówków) |
 
 Wymaganie dla przykładu specyfikacji wskazuje rozdział, a nie pojedynczy przykład; przykłady są testami tego wymagania.
 Pliki powstają razem z etapami w `../docs/roadmap.md`.

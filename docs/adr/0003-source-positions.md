@@ -15,6 +15,9 @@ niedozwolony obraz”). Pytanie brzmiało, czy płacić za to pamięcią na każ
 3. Wiersze i kolumny liczymy od 1; kolumna jest liczona w bajtach wiersza źródła (tabulator to jeden bajt).
    Jeśli odbiorca będzie potrzebował kolumn w znakach, dojdzie funkcja przeliczająca, bez zmiany węzła.
 
+Gdy źródło zawiera U+0000 albo niepoprawny UTF-8, pozycje odnoszą się do źródła po zamianie tych bajtów
+(ADR 0004).
+
 ## Konsekwencje
 
 + komunikaty walidatorów są dokładne także dla elementów w wierszu;

@@ -21,6 +21,7 @@ import (
 	"github.com/polestorm/gomdgo/internal/spectest"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/renderer/html"
 )
 
@@ -48,13 +49,22 @@ type tally struct {
 func main() {
 	var specs multiFlag
 	flag.Var(&specs, "spec", "plik specyfikacji z przykładami (można podać kilka razy)")
+	safe := flag.Bool("safe", false, "porównaj tryby bezpieczne: surowy HTML pomijany, adresy filtrowane")
 	outDir := flag.String("out", "", "katalog na raport różnic (poza repozytorium, np. ../../out/compare)")
 	flag.Parse()
 
-	// Przepuszczanie surowego HTML jest włączone, bo przykłady specyfikacji go oczekują. Porównanie w trybie
-	// domyślnym gomdgo (HTML escapowany) dojdzie razem z polityką surowego HTML w etapie 3.
-	plain := goldmark.New(goldmark.WithRendererOptions(html.WithUnsafe()))
-	gfm := goldmark.New(goldmark.WithExtensions(extension.GFM), goldmark.WithRendererOptions(html.WithUnsafe()))
+	// Tryb zwykły: oba parsery przepuszczają surowy HTML i nie sprawdzają adresów, bo tego oczekują przykłady
+	// specyfikacji. Tryb -safe: oba pomijają surowy HTML i filtrują adresy, każdy po swojemu; goldmark
+	// zostawia w miejscu pominiętego HTML komentarz, który przed porównaniem usuwamy.
+	var rendererOptions []renderer.Option
+	conv := gomdgo.New(gomdgo.Config{RawHTML: gomdgo.RawHTMLPass, AnyScheme: true})
+	if *safe {
+		conv = gomdgo.New(gomdgo.Config{RawHTML: gomdgo.RawHTMLOmit})
+	} else {
+		rendererOptions = append(rendererOptions, html.WithUnsafe())
+	}
+	plain := goldmark.New(goldmark.WithRendererOptions(rendererOptions...))
+	gfm := goldmark.New(goldmark.WithExtensions(extension.GFM), goldmark.WithRendererOptions(rendererOptions...))
 
 	var inputs []input
 	var groups []string
@@ -114,15 +124,19 @@ func main() {
 		if err := md.Convert([]byte(in.markdown), &buf); err != nil {
 			fatal(fmt.Errorf("%s: reference parser: %w", in.name, err))
 		}
-		ours := htmlnorm.Normalize(string(gomdgo.RenderWith([]byte(in.markdown), gomdgo.Options{UnsafeHTML: true})))
-		ref := htmlnorm.Normalize(buf.String())
+		rendered, err := conv.Render([]byte(in.markdown))
+		if err != nil {
+			fatal(fmt.Errorf("%s: gomdgo: %w", in.name, err))
+		}
+		ours := htmlnorm.Normalize(string(rendered))
+		ref := htmlnorm.Normalize(strings.ReplaceAll(buf.String(), "<!-- raw HTML omitted -->", ""))
 		c.total++
 		if ours == ref {
 			c.same++
 		} else {
 			fmt.Fprintf(&report, "=== %s\n--- markdown\n%s--- gomdgo\n%s\n--- goldmark\n%s\n\n", in.name, in.markdown, ours, ref)
 		}
-		if in.spec {
+		if in.spec && !*safe {
 			want := htmlnorm.Normalize(in.want)
 			c.specTotal++
 			if ours == want {
@@ -137,7 +151,11 @@ func main() {
 		}
 	}
 
-	fmt.Printf("reference: goldmark %s (raw HTML passed through)\n\n", referenceVersion())
+	mode := "raw HTML passed through, any URL scheme"
+	if *safe {
+		mode = "safe modes: raw HTML omitted, URLs filtered"
+	}
+	fmt.Printf("reference: goldmark %s (%s)\n\n", referenceVersion(), mode)
 	fmt.Printf("%-24s %8s %22s %18s %18s\n", "group", "inputs", "gomdgo = goldmark", "gomdgo = spec", "goldmark = spec")
 	var all tally
 	for _, g := range groups {

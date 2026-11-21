@@ -5,6 +5,12 @@ specyfikacji i uzasadnieniem. Gdy `goldmark` odbiega od specyfikacji, wygrywa sp
 
 | # | Wejście | `gomdgo` | `goldmark` | Specyfikacja | Uzasadnienie |
 |---|---|---|---|---|---|
+| 1 | tryb bezpieczny (`tools/compare -safe`): odnośnik albo autolink ze schematem spoza `http`, `https`, `mailto`, np. `<irc://foo.bar:2233/baz>`, `<a+b+c:d>`, `<made-up-scheme://foo,bar>`, `<localhost:5001/foo>` (przykłady CommonMark 596, 598, 599, 601) | sama treść, bez `<a>` | `<a href="…">` z pełnym adresem | nie dotyczy: specyfikacja nie opisuje filtrowania adresów | lista dozwolonych zamiast listy zakazanych (ADR 0006, `SAFE-003`); przy przepuszczaniu wszystkich schematów (`AnyScheme`) wyniki są identyczne |
+
+Różnice trybu bezpiecznego, których korpus dziś nie zawiera, a które wynikają z tych samych decyzji:
+`goldmark` dla schematów `javascript:`, `vbscript:`, `file:`, `data:` zostawia odnośnik z pustym `href`, `gomdgo`
+zostawia samą treść; `goldmark` w miejscu pominiętego surowego HTML wstawia komentarz `<!-- raw HTML omitted -->`,
+`gomdgo` (`RawHTMLOmit`) nie wstawia nic (porównanie usuwa ten komentarz przed normalizacją).
 
 ## Zapowiedziane (odstępstwa odniesienia od specyfikacji, zanim powstał nasz kod)
 
