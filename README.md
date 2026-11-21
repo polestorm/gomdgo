@@ -2,7 +2,8 @@
 
 Markdown → HTML in pure Go, written from the specifications, with no dependencies outside the standard library.
 
-**Status: planning.** No parser code yet. See [docs/roadmap.md](docs/roadmap.md) for the stages and
+**Status: test infrastructure in place, no parser yet.** `Render` is a placeholder; the specification examples,
+the requirement coverage test, the fuzz target and the differential comparison against the reference parser run. See [docs/roadmap.md](docs/roadmap.md) for the stages and
 [docs/adr/0001-scope-and-acceptance.md](docs/adr/0001-scope-and-acceptance.md) for the scope and the acceptance
 criteria.
 

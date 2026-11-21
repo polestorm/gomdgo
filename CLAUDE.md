@@ -37,10 +37,12 @@ kolumnę „Stan” w `docs/roadmap.md`.
 
 ## Jak pracujemy
 
-- etapy w kolejności z `docs/roadmap.md`; **pierwszy krok: etap 0** (wczytanie przykładów specyfikacji, test pokrycia
-  wymagań, szkielet fuzzingu, `tools/compare` z własnym `go.mod`, w którym wolno zależeć od `goldmark`);
-- przed etapem 0 potrzebna decyzja właściciela w pytaniu 1 (`docs/adr/open-questions.md`: przykłady specyfikacji
-  na CC BY-SA 4.0 w repozytorium czy pobierane); pytanie 2 (licencja) nie blokuje pracy;
+- etapy w kolejności z `docs/roadmap.md`; etap 0 (infrastruktura testów) jest gotowy, **następny krok: etap 1**
+  (struktura bloków), zaczynany od `requirements/blocks.md` i węzła z pozycją według ADR 0003;
+- miara postępu: `go test -v -run TestSpec .`; listy zaliczonych przykładów `testdata/spec/passing-*.txt` przepisuje
+  `go test -update .` (opis w `docs/testing.md`); porównanie z odniesieniem: `tools/compare`;
+- pytania otwarte w `docs/adr/open-questions.md`: 6 (niepoprawny UTF-8) przed końcem etapu 1, 7 (sygnatura `Render`)
+  przed etapem 3, 3 i 4 przed etapem 5; pytanie 2 (licencja) nie blokuje pracy;
 - wymagania piszemy razem z etapem, w plikach według prefiksów z `requirements/README.md`;
 - najpierw test (przykład specyfikacji albo plik korpusu), potem kod; liczba zaliczonych przykładów nie spada między
   commitami bez wpisu, dlaczego;
