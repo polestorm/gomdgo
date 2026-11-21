@@ -37,10 +37,13 @@ kolumnę „Stan” w `docs/roadmap.md`.
 
 ## Jak pracujemy
 
-- etapy w kolejności z `docs/roadmap.md`; etapy 0 (infrastruktura testów) i 1 (struktura bloków) są gotowe,
-  **następny krok: etap 2** (treść w wierszu), zaczynany od `requirements/inlines.md`; miejsce wpięcia to
-  `renderer.inline` w `render.go`, a skanery etykiety, celu i tytułu odnośnika oraz znaczników HTML już istnieją
-  (`links.go`, `htmltag.go`, `escape.go`);
+- etapy w kolejności z `docs/roadmap.md`; etapy 0–2 są gotowe (K1: 652/652), **następny krok: etap 3**
+  (renderer i bezpieczeństwo: lista dozwolonych schematów, polityka surowego HTML, identyfikatory nagłówków),
+  zaczynany od `requirements/safety.md` i od decyzji w pytaniach 6 i 7;
+- układ kodu: `block.go` (faza 1, wiersz po wierszu), `inline.go` (faza 2, stos ograniczników i stos nawiasów),
+  `links.go`, `htmltag.go`, `escape.go` (skanery wspólne), `render.go` (przejście iteracyjne); każde wyszukiwanie
+  w przód, które może zawieść, musi zapamiętać niepowodzenie, a każdy nowy przypadek złośliwy trafia do
+  `TestPathological`;
 - miara postępu: `go test -v -run TestSpec .`; listy zaliczonych przykładów `testdata/spec/passing-*.txt` przepisuje
   `go test -update .` (opis w `docs/testing.md`); porównanie z odniesieniem: `tools/compare`;
 - pytania otwarte w `docs/adr/open-questions.md`: 6 (niepoprawny UTF-8) i 7 (sygnatura `Render`)

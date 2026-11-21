@@ -2,9 +2,9 @@
 
 Markdown → HTML in pure Go, written from the specifications, with no dependencies outside the standard library.
 
-**Status: block structure done, inline content next.** `Render` recognises the CommonMark block structure
-(headings, lists, block quotes, code blocks, HTML blocks, link reference definitions); inline syntax is still
-written out as plain text. 343 of the 652 CommonMark examples pass. See [docs/roadmap.md](docs/roadmap.md) for the stages and
+**Status: CommonMark complete, safety policy and GFM next.** All 652 examples of the CommonMark 0.31.2
+specification pass byte for byte. The API is provisional; the URL scheme allow-list, the raw HTML policy and the
+GFM extensions are not implemented yet. See [docs/roadmap.md](docs/roadmap.md) for the stages and
 [docs/adr/0001-scope-and-acceptance.md](docs/adr/0001-scope-and-acceptance.md) for the scope and the acceptance
 criteria.
 

@@ -1,8 +1,8 @@
 # Wymagania: struktura bloków
 
 Źródło: CommonMark 0.31.2, rozdziały 2–5. Przykłady z danego rozdziału specyfikacji są testami wymagania
-(`TestSpecCommonMark`, tabela `sectionRequirements`). Dopóki nie ma treści w wierszu (etap 2), przykłady,
-które jej wymagają, nie przechodzą; lista zaliczonych jest w `testdata/spec/passing-commonmark.txt`.
+(`TestSpecCommonMark`, tabela `sectionRequirements`). Lista zaliczonych przykładów jest
+w `testdata/spec/passing-commonmark.txt`.
 
 | Id | Wymaganie |
 |---|---|

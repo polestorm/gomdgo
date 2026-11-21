@@ -61,7 +61,7 @@ func htmlBlockStart(s []byte) int {
 		(j == len(s) || s[j] == ' ' || s[j] == '\t' || s[j] == '>' || bytes.HasPrefix(s[j:], []byte("/>"))) {
 		return 6
 	}
-	end := scanOpenTag(s, 0)
+	end := scanOpenTag(s, 0, nil)
 	if end < 0 {
 		end = scanClosingTag(s, 0)
 	}
@@ -106,7 +106,10 @@ func scanTagName(s []byte, i int) int {
 }
 
 // scanOpenTag rozpoznaje znacznik otwierający zaczynający się w s[i]; zwraca pozycję za nim albo -1.
-func scanOpenTag(s []byte, i int) int {
+//
+// noQuote (może być nil) pamięta, że dalej w tekście nie ma już cudzysłowu danego rodzaju, żeby seria
+// niedomkniętych wartości atrybutów nie była przeszukiwana wielokrotnie.
+func scanOpenTag(s []byte, i int, noQuote *[searchKinds]bool) int {
 	if i >= len(s) || s[i] != '<' {
 		return -1
 	}
@@ -158,8 +161,18 @@ func scanOpenTag(s []byte, i int) int {
 		}
 		switch q := s[j]; q {
 		case '"', '\'':
+			memo := searchDoubleQuote
+			if q == '\'' {
+				memo = searchSingleQuote
+			}
+			if noQuote != nil && noQuote[memo] {
+				return -1
+			}
 			k := bytes.IndexByte(s[j+1:], q)
 			if k < 0 {
+				if noQuote != nil {
+					noQuote[memo] = true
+				}
 				return -1
 			}
 			i = j + k + 2

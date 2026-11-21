@@ -13,8 +13,8 @@ type Options struct {
 
 // Render zamienia źródło Markdown na fragment HTML przy ustawieniach domyślnych (bezpiecznych).
 //
-// Stan po etapie 1: rozpoznawana jest struktura bloków CommonMark; treść w wierszu (wyróżnienia, odnośniki,
-// kod w wierszu) trafia do wyniku jako zwykły tekst.
+// Stan po etapie 2: pełny CommonMark 0.31.2. Surowy HTML ze źródła jest escapowany; adresy odnośników nie są
+// jeszcze sprawdzane względem listy dozwolonych schematów (etap 3).
 func Render(src []byte) []byte {
 	return RenderWith(src, Options{})
 }

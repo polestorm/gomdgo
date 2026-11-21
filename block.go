@@ -36,7 +36,30 @@ func parse(src []byte) *document {
 	}
 	p.closeDescendants(p.doc.root)
 	p.close(p.doc.root)
+	p.inlines()
 	return &p.doc
+}
+
+// inlines uruchamia fazę drugą: treść każdego akapitu i nagłówka. Dopiero teraz znane są wszystkie
+// definicje odsyłaczy. Przejście po drzewie jest iteracyjne.
+func (p *parser) inlines() {
+	ip := inlineParser{doc: &p.doc}
+	root := p.doc.root
+	for n := root; ; {
+		if n.kind == kindParagraph || n.kind == kindHeading {
+			ip.parse(n)
+		} else if n.first != nil {
+			n = n.first
+			continue
+		}
+		for n != root && n.next == nil {
+			n = n.parent
+		}
+		if n == root {
+			return
+		}
+		n = n.next
+	}
 }
 
 // line przetwarza jeden wiersz źródła.

@@ -52,6 +52,10 @@ func normalizeLabel(label []byte) string {
 	return strings.ReplaceAll(s, "ß", "ss")
 }
 
+// maxParenDepth ogranicza zagnieżdżenie nawiasów w celu odnośnika. Specyfikacja pozwala na limit (nie mniejszy
+// niż 3), bo bez niego seria niedomkniętych nawiasów daje czas kwadratowy.
+const maxParenDepth = 32
+
 // scanLinkDestination rozpoznaje cel odnośnika zaczynający się w s[i]. Zwraca surowy cel (bez nawiasów
 // kątowych) i pozycję za nim albo end = -1.
 func scanLinkDestination(s []byte, i int) (dest []byte, end int) {
@@ -83,7 +87,9 @@ loop:
 				j++
 			}
 		case c == '(':
-			depth++
+			if depth++; depth > maxParenDepth {
+				return nil, -1
+			}
 		case c == ')':
 			if depth == 0 {
 				break loop

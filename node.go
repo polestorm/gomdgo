@@ -16,11 +16,23 @@ const (
 	kindCodeBlock
 	kindHTMLBlock
 	kindRefDefs // akapit, z którego zostały same definicje odsyłaczy; nie daje wyniku
+
+	// treść w wierszu
+	kindText
+	kindSoftBreak
+	kindHardBreak
+	kindCode
+	kindEmph
+	kindStrong
+	kindLink
+	kindImage
+	kindHTMLInline
 )
 
 var kindNames = [...]string{
 	"document", "block_quote", "list", "item", "paragraph", "heading", "thematic_break", "code_block",
 	"html_block", "ref_defs",
+	"text", "soft_break", "hard_break", "code", "emph", "strong", "link", "image", "html_inline",
 }
 
 func (k kind) String() string { return kindNames[k] }
@@ -45,9 +57,9 @@ type node struct {
 	kind kind
 	open bool // blok przyjmuje jeszcze wiersze
 	// pos to przesunięcie bajtowe początku węzła w źródle (ADR 0003); wiersz i kolumnę daje document.position.
-	pos                       int
-	parent, first, last, next *node
-	startLine, endLine        int // pierwszy i ostatni wiersz źródła należący do bloku, od 1
+	pos                             int
+	parent, first, last, prev, next *node
+	startLine, endLine              int // pierwszy i ostatni wiersz źródła należący do bloku, od 1
 
 	list          listData // lista i element listy
 	contentIndent int      // element listy: szerokość znacznika z odstępem (wcięcie treści)
@@ -56,24 +68,73 @@ type node struct {
 	level int    // nagłówek: 1–6
 	spans []span // akapit i nagłówek: wiersze treści do parsowania w wierszu
 
-	literal     []byte // kod i blok HTML: treść dosłowna
+	literal     []byte // kod, blok HTML, tekst i HTML w wierszu: treść dosłowna
 	trim        int    // kod przez wcięcie: długość treści bez końcowych pustych wierszy
 	fenced      bool
 	fenceChar   byte
 	fenceLen    int
 	fenceIndent int
-	info        string // kod ogrodzony: napis informacyjny, surowy
-	htmlType    int    // blok HTML: warunek początku 1–7
+	info        string // kod ogrodzony: napis informacyjny, surowy; odnośnik i obraz: cel po rozwinięciu
+	title       string // odnośnik i obraz: tytuł po rozwinięciu
+	hasTitle    bool
+	htmlType    int // blok HTML: warunek początku 1–7
 }
 
 func (n *node) appendChild(c *node) {
 	c.parent = n
+	c.prev = n.last
 	if n.last == nil {
 		n.first = c
 	} else {
 		n.last.next = c
 	}
 	n.last = c
+}
+
+// insertAfter wstawia w jako następne rodzeństwo n.
+func (n *node) insertAfter(w *node) {
+	w.parent, w.prev, w.next = n.parent, n, n.next
+	if n.next != nil {
+		n.next.prev = w
+	} else {
+		n.parent.last = w
+	}
+	n.next = w
+}
+
+// unlink wyjmuje węzeł z drzewa.
+func (n *node) unlink() {
+	if n.prev != nil {
+		n.prev.next = n.next
+	} else {
+		n.parent.first = n.next
+	}
+	if n.next != nil {
+		n.next.prev = n.prev
+	} else {
+		n.parent.last = n.prev
+	}
+	n.parent, n.prev, n.next = nil, nil, nil
+}
+
+// adopt przenosi ciąg rodzeństwa od first do last włącznie pod węzeł w, który nie ma jeszcze dzieci.
+func adopt(w, first, last *node) {
+	parent := first.parent
+	if first.prev != nil {
+		first.prev.next = last.next
+	} else {
+		parent.first = last.next
+	}
+	if last.next != nil {
+		last.next.prev = first.prev
+	} else {
+		parent.last = first.prev
+	}
+	first.prev, last.next = nil, nil
+	w.first, w.last = first, last
+	for c := first; c != nil; c = c.next {
+		c.parent = w
+	}
 }
 
 // reference to definicja odsyłacza; cel i tytuł są surowe (ze znakami ucieczki i odwołaniami znakowymi).

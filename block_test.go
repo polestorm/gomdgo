@@ -27,6 +27,19 @@ var sectionRequirements = map[string]string{
 	"Block quotes":               "BLK-013", // REQ: BLK-013
 	"List items":                 "BLK-014", // REQ: BLK-014
 	"Lists":                      "BLK-015", // REQ: BLK-015
+
+	"Backslash escapes":                       "INL-001", // REQ: INL-001
+	"Entity and numeric character references": "INL-002", // REQ: INL-002
+	"Inlines":                      "INL-003", // REQ: INL-003
+	"Code spans":                   "INL-003",
+	"Emphasis and strong emphasis": "INL-004", // REQ: INL-004
+	"Links":                        "INL-005", // REQ: INL-005
+	"Images":                       "INL-006", // REQ: INL-006
+	"Autolinks":                    "INL-007", // REQ: INL-007
+	"Raw HTML":                     "INL-008", // REQ: INL-008
+	"Hard line breaks":             "INL-009", // REQ: INL-009
+	"Soft line breaks":             "INL-010", // REQ: INL-010
+	"Textual content":              "INL-011", // REQ: INL-011
 }
 
 // TestSpecSectionsHaveRequirements pilnuje, żeby rozdziały specyfikacji z tabeli istniały pod tą nazwą.
@@ -38,6 +51,11 @@ func TestSpecSectionsHaveRequirements(t *testing.T) {
 	for s := range sectionRequirements {
 		if !sections[s] {
 			t.Errorf("section %q is not in the specification", s)
+		}
+	}
+	for s := range sections {
+		if sectionRequirements[s] == "" {
+			t.Errorf("section %q has no requirement", s)
 		}
 	}
 }
@@ -91,7 +109,7 @@ func TestReferenceDefinitions(t *testing.T) {
 		{"[a]: b(c\n", nil, "<p>[a]: b(c</p>\n"},
 		{"[]: /url\n", nil, "<p>[]: /url</p>\n"},
 		{"[a[b]: /url\n", nil, "<p>[a[b]: /url</p>\n"},
-		{"[a\\]b]: /url (t (x)\n", nil, "<p>[a\\]b]: /url (t (x)</p>\n"},
+		{"[a\\]b]: /url (t (x)\n", nil, "<p>[a]b]: /url (t (x)</p>\n"},
 		{"[" + strings.Repeat("a", 999) + "]: /url\n", []ref{{strings.Repeat("a", 999), "/url", ""}}, ""},
 	}
 	for _, c := range cases {
@@ -116,13 +134,24 @@ func TestReferenceDefinitions(t *testing.T) {
 	}
 }
 
-// dumpTree zapisuje drzewo jako wiersze „rodzaj wiersz:kolumna”, z wcięciem według głębokości.
-func dumpTree(doc *document) string {
+// dumpTree zapisuje drzewo jako wiersze „rodzaj wiersz:kolumna”, z wcięciem według głębokości; inlines
+// włącza węzły treści w wierszu.
+func dumpTree(doc *document, inlines bool) string {
 	var b strings.Builder
 	var walk func(n *node, depth int)
 	walk = func(n *node, depth int) {
+		if n.kind >= kindText && !inlines {
+			return
+		}
 		line, col := doc.position(n.pos)
-		fmt.Fprintf(&b, "%s%s %d:%d\n", strings.Repeat("  ", depth), n.kind, line, col)
+		fmt.Fprintf(&b, "%s%s %d:%d", strings.Repeat("  ", depth), n.kind, line, col)
+		if n.kind == kindText || n.kind == kindCode || n.kind == kindHTMLInline {
+			fmt.Fprintf(&b, " %q", n.literal)
+		}
+		if n.kind == kindLink || n.kind == kindImage {
+			fmt.Fprintf(&b, " %q %q", n.info, n.title)
+		}
+		b.WriteByte('\n')
 		for c := n.first; c != nil; c = c.next {
 			walk(c, depth+1)
 		}
@@ -169,7 +198,7 @@ func TestBlockPositions(t *testing.T) {
   html_block 18:1
 `
 	doc := parse([]byte(src))
-	if got := dumpTree(doc); got != want {
+	if got := dumpTree(doc, false); got != want {
 		t.Errorf("tree:\n%s\nwant:\n%s", got, want)
 	}
 	if line, col := doc.position(len(src)); line != 18 || col != 7 {
@@ -258,6 +287,7 @@ func TestPathological(t *testing.T) {
 		{"open tag with many attributes", func(n int) string { return "<a" + strings.Repeat(" b=c", n) + "\n" }},
 		{"tabs", func(n int) string { return strings.Repeat("\t", n) + "a\n" }},
 	}
+	cases = append(cases, pathologicalInlines...)
 	// Rozmiary różnią się 16 razy: wzrost liniowy to czynnik 16, kwadratowy 256. Próg 96 zostawia zapas
 	// na odśmiecanie pamięci, które przy małym rozmiarze jeszcze nie pracuje (pomiar w docs/testing.md).
 	const small, factor, slack = 10_000, 16, 6

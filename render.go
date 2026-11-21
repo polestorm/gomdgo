@@ -25,8 +25,7 @@ func (r *renderer) render(root *node) {
 	n, entering := root, true
 	for {
 		if entering {
-			r.enter(n)
-			if n.first != nil {
+			if descend := r.enter(n); descend && n.first != nil {
 				n = n.first
 				continue
 			}
@@ -43,6 +42,11 @@ func (r *renderer) render(root *node) {
 	}
 }
 
+// tightParagraph: w liście zwartej akapit będący bezpośrednio w elemencie nie ma znaczników <p>.
+func tightParagraph(n *node) bool {
+	return n.parent.kind == kindItem && n.parent.parent.list.tight
+}
+
 func listTag(n *node) string {
 	if n.list.ordered {
 		return "ol"
@@ -50,8 +54,9 @@ func listTag(n *node) string {
 	return "ul"
 }
 
-// enter zapisuje początek bloku, a dla bloków bez dzieci całą treść.
-func (r *renderer) enter(n *node) {
+// enter zapisuje początek węzła, a dla węzłów bez dzieci całą treść. Zwraca false, gdy dzieci węzła
+// nie należy odwiedzać.
+func (r *renderer) enter(n *node) bool {
 	out := &r.out
 	switch n.kind {
 	case kindBlockQuote:
@@ -67,21 +72,13 @@ func (r *renderer) enter(n *node) {
 	case kindItem:
 		out.WriteString("<li>")
 	case kindParagraph:
-		// W liście zwartej akapit będący bezpośrednio w elemencie nie ma znaczników <p>.
-		if n.parent.kind == kindItem && n.parent.parent.list.tight {
-			r.inline(n)
-			return
+		if !tightParagraph(n) {
+			r.cr()
+			out.WriteString("<p>")
 		}
-		r.cr()
-		out.WriteString("<p>")
-		r.inline(n)
-		out.WriteString("</p>\n")
 	case kindHeading:
 		r.cr()
-		tag := "h" + strconv.Itoa(n.level)
-		out.WriteString("<" + tag + ">")
-		r.inline(n)
-		out.WriteString("</" + tag + ">\n")
+		out.WriteString("<h" + strconv.Itoa(n.level) + ">")
 	case kindThematicBreak:
 		r.cr()
 		out.WriteString("<hr />\n")
@@ -98,34 +95,107 @@ func (r *renderer) enter(n *node) {
 		out.WriteString("</code></pre>\n")
 	case kindHTMLBlock:
 		r.cr()
-		if r.opts.UnsafeHTML {
-			out.Write(n.literal)
-		} else {
-			// Tymczasowo: treść bloku jako tekst. Politykę surowego HTML ustala etap 3.
-			escapeHTML(out, n.literal)
-		}
+		r.rawHTML(n.literal)
+
+	case kindText:
+		escapeHTML(out, n.literal)
+	case kindSoftBreak:
+		out.WriteByte('\n')
+	case kindHardBreak:
+		out.WriteString("<br />\n")
+	case kindCode:
+		out.WriteString("<code>")
+		escapeHTML(out, n.literal)
+		out.WriteString("</code>")
+	case kindEmph:
+		out.WriteString("<em>")
+	case kindStrong:
+		out.WriteString("<strong>")
+	case kindLink:
+		out.WriteString(`<a href="`)
+		escapeHTML(out, encodeURL(n.info))
+		r.titleAttr(n)
+		out.WriteString(">")
+	case kindImage:
+		out.WriteString(`<img src="`)
+		escapeHTML(out, encodeURL(n.info))
+		out.WriteString(`" alt="`)
+		r.plainText(n)
+		r.titleAttr(n)
+		out.WriteString(" />")
+		return false
+	case kindHTMLInline:
+		r.rawHTML(n.literal)
+	}
+	return true
+}
+
+// titleAttr domyka atrybut adresu i dopisuje atrybut title, jeśli odnośnik albo obraz ma tytuł.
+func (r *renderer) titleAttr(n *node) {
+	r.out.WriteByte('"')
+	if n.hasTitle {
+		r.out.WriteString(` title="`)
+		escapeHTML(&r.out, []byte(n.title))
+		r.out.WriteByte('"')
 	}
 }
 
-// leave zapisuje koniec bloku, który ma znacznik zamykający.
-func (r *renderer) leave(n *node) {
-	switch n.kind {
-	case kindBlockQuote:
-		r.out.WriteString("</blockquote>\n")
-	case kindList:
-		r.out.WriteString("</" + listTag(n) + ">\n")
-	case kindItem:
-		r.out.WriteString("</li>\n")
+// rawHTML zapisuje surowy HTML ze źródła zgodnie z ustawieniami.
+func (r *renderer) rawHTML(literal []byte) {
+	if r.opts.UnsafeHTML {
+		r.out.Write(literal)
+	} else {
+		// Tymczasowo: jako tekst. Politykę surowego HTML ustala etap 3.
+		escapeHTML(&r.out, literal)
 	}
 }
 
-// inline zapisuje treść akapitu albo nagłówka. ZAŚLEPKA etapu 1: treść w wierszu nie jest jeszcze
-// parsowana (etap 2); wiersze są łączone znakiem nowego wiersza, bez białych znaków na końcach.
-func (r *renderer) inline(n *node) {
-	for i, s := range n.spans {
-		if i > 0 {
+// plainText zapisuje sam tekst poddrzewa (opis obrazu w atrybucie alt), bez znaczników.
+func (r *renderer) plainText(root *node) {
+	if root.first == nil {
+		return
+	}
+	for n := root.first; ; {
+		switch n.kind {
+		case kindText, kindCode:
+			escapeHTML(&r.out, n.literal)
+		case kindSoftBreak, kindHardBreak:
 			r.out.WriteByte('\n')
 		}
-		escapeHTML(&r.out, bytes.TrimRight(r.doc.src[s.start:s.end], " \t"))
+		if n.first != nil {
+			n = n.first
+			continue
+		}
+		for n.next == nil {
+			if n = n.parent; n == root {
+				return
+			}
+		}
+		n = n.next
+	}
+}
+
+// leave zapisuje koniec węzła, który ma znacznik zamykający.
+func (r *renderer) leave(n *node) {
+	out := &r.out
+	switch n.kind {
+	case kindBlockQuote:
+		out.WriteString("</blockquote>\n")
+	case kindList:
+		out.WriteString("</" + listTag(n) + ">\n")
+	case kindItem:
+		out.WriteString("</li>\n")
+	case kindParagraph:
+		if !tightParagraph(n) {
+			out.WriteString("</p>\n")
+		}
+	case kindHeading:
+		out.WriteString("</h" + strconv.Itoa(n.level) + ">\n")
+	case kindEmph:
+		out.WriteString("</em>")
+	case kindStrong:
+		out.WriteString("</strong>")
+	case kindLink:
+		out.WriteString("</a>")
 	}
 }

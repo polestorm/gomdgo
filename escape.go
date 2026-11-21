@@ -99,3 +99,36 @@ func entity(s string) (text string, n int) {
 	}
 	return text, end + 1
 }
+
+// urlSafe: znaki, które w adresie zostają bez zmian (litery, cyfry, znaki zastrzeżone i niezastrzeżone
+// według RFC 3986 oraz znak procentu, żeby nie kodować dwa razy).
+var urlSafe = func() (t [256]bool) {
+	for _, c := range "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;/?:@&=+$,-_.!~*'()#%" {
+		t[c] = true
+	}
+	return
+}()
+
+// encodeURL koduje procentowo bajty, które nie mogą wystąpić w adresie wprost.
+func encodeURL(s string) []byte {
+	clean := true
+	for i := 0; i < len(s); i++ {
+		if !urlSafe[s[i]] {
+			clean = false
+			break
+		}
+	}
+	if clean {
+		return []byte(s)
+	}
+	const hex = "0123456789ABCDEF"
+	out := make([]byte, 0, len(s)+16)
+	for i := 0; i < len(s); i++ {
+		if c := s[i]; urlSafe[c] {
+			out = append(out, c)
+		} else {
+			out = append(out, '%', hex[c>>4], hex[c&15])
+		}
+	}
+	return out
+}
