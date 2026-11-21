@@ -37,6 +37,14 @@ type Config struct {
 	// Disable: GFM daje czysty CommonMark.
 	Disable Extension
 
+	// Enable: rozszerzenia spoza specyfikacji GFM do włączenia: Alerts (bloki uwag) i Footnotes (przypisy).
+	Enable Extension
+
+	// AlertTitles: tytuły bloków uwag według rodzaju ("note", "tip", "important", "warning", "caution").
+	// Dla rodzaju z niepustym tytułem blok zaczyna się akapitem <p class="alert-title">. Biblioteka nie ma
+	// własnych tytułów, bo nie zna języka dokumentu.
+	AlertTitles map[string]string
+
 	// SingleTilde (zgodność z parserem odniesienia i z praktyką GitHub): przekreślenie obejmuje także tekst
 	// w pojedynczych tyldach, ~tak~. Bez znaczenia, gdy Strikethrough jest wyłączone. Specyfikacja GFM mówi
 	// o dwóch tyldach.
@@ -45,6 +53,15 @@ type Config struct {
 	// TableAlignStyle (zgodność z parserem odniesienia): wyrównanie kolumny tabeli jest zapisywane jako
 	// style="text-align:…" zamiast atrybutu align ze specyfikacji GFM.
 	TableAlignStyle bool
+
+	// CodeBlocks: funkcje renderujące bloki kodu ogrodzonego według języka (pierwszego słowa napisu
+	// informacyjnego, z rozróżnieniem wielkości liter), np. "mermaid". Blok o innym języku jest zapisywany
+	// zwykle. Wynik funkcji trafia do dokumentu bez zmian.
+	CodeBlocks map[string]CodeBlockFunc
+
+	// References: funkcja rozwiązująca odwołania w wierszu [[cel]]. Gdy jest nil, taki zapis jest zwykłym
+	// tekstem CommonMark.
+	References ReferenceFunc
 
 	// HeadingIDs dodaje nagłówkom atrybut id utworzony z ich tekstu, unikalny w dokumencie.
 	HeadingIDs bool
@@ -59,11 +76,14 @@ type Converter struct {
 	cfg     Config
 	schemes map[string]bool
 	ext     Extension // rozszerzenia przekazywane parserowi, z bitami wewnętrznymi
+
+	codeBlocks  map[string]CodeBlockFunc
+	alertTitles [len(alertNames)]string
 }
 
 // New tworzy konwerter. Nieznana wartość Config.RawHTML działa jak RawHTMLEscape.
 func New(cfg Config) *Converter {
-	c := &Converter{cfg: cfg, schemes: map[string]bool{}, ext: GFM &^ cfg.Disable}
+	c := &Converter{cfg: cfg, schemes: map[string]bool{}, ext: GFM &^ cfg.Disable & GFM}
 	if cfg.SingleTilde && c.ext&Strikethrough != 0 {
 		c.ext |= extSingleTilde
 	}
@@ -75,6 +95,21 @@ func New(cfg Config) *Converter {
 		c.schemes[strings.ToLower(strings.TrimSuffix(s, ":"))] = true
 	}
 	c.cfg.Schemes = nil // lista wywołującego nie jest przechowywana; obowiązuje kopia w schemes
+	if len(cfg.CodeBlocks) > 0 {
+		c.codeBlocks = make(map[string]CodeBlockFunc, len(cfg.CodeBlocks))
+		for lang, fn := range cfg.CodeBlocks {
+			c.codeBlocks[lang] = fn
+		}
+	}
+	c.cfg.CodeBlocks = nil
+	c.ext |= cfg.Enable & (Alerts | Footnotes)
+	for i, name := range alertNames {
+		c.alertTitles[i] = cfg.AlertTitles[name]
+	}
+	c.cfg.AlertTitles = nil
+	if cfg.References != nil {
+		c.ext |= extReferences
+	}
 	return c
 }
 
@@ -109,10 +144,15 @@ type Document struct {
 }
 
 // HTML zapisuje dokument jako fragment HTML. Błąd może pochodzić wyłącznie z funkcji wywołującego
-// podłączonej w punkcie rozszerzenia (etap 5); do tego czasu jest zawsze nil.
+// podłączonej w punkcie rozszerzenia (Config.CodeBlocks, Config.References) i ma typ *Error; bez takich
+// funkcji jest zawsze nil.
 func (d *Document) HTML() ([]byte, error) {
 	r := renderer{doc: d.doc, conv: d.conv}
 	r.render(d.doc.root)
+	r.footnotes()
+	if r.err != nil {
+		return nil, r.err // wynik jest kompletny albo nie ma go wcale (ADR 0005)
+	}
 	return r.out.Bytes(), nil
 }
 

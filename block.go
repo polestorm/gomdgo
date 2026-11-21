@@ -14,7 +14,7 @@ type parser struct {
 }
 
 func parse(src []byte, ext Extension) *document {
-	p := &parser{doc: document{src: src, refs: map[string]*reference{}, ext: ext}}
+	p := &parser{doc: document{src: src, refs: map[string]*reference{}, ext: ext, footnotes: map[string]*node{}}}
 	p.doc.root = &node{kind: kindDocument, open: true, startLine: 1, endLine: 1}
 	p.tip = p.doc.root
 	for off := 0; off < len(src); {
@@ -177,6 +177,23 @@ starts:
 				return
 			}
 
+		case ch == '[' && p.doc.ext&Footnotes != 0:
+			// Definicja przypisu [^etykieta]: jest kontenerem; dalsze wiersze należą do niej, gdy są
+			// wcięte o cztery kolumny.
+			if label, end := footnoteLabel(rest); end > 0 && end < len(rest) && rest[end] == ':' {
+				closeUnmatched()
+				container = p.add(container, kindFootnoteDef, pos)
+				container.info = normalizeLabel(label)
+				container.contentIndent = 4
+				if _, dup := p.doc.footnotes[container.info]; !dup {
+					p.doc.footnotes[container.info] = container
+				}
+				c.skipCols(indent)
+				c.advance(end + 1)
+				c.skipSpaces()
+				continue starts
+			}
+
 		case ch == '<':
 			if t := htmlBlockStart(rest); t != 0 && (t != 7 || para == nil) {
 				closeUnmatched()
@@ -314,7 +331,7 @@ func (p *parser) continues(n *node, c *cursor) bool {
 		c.skipCols(1)
 		n.markerLine = p.lineNo
 		return true
-	case kindItem:
+	case kindItem, kindFootnoteDef:
 		indent, j := c.indent()
 		if j == len(c.s) {
 			// Pusty wiersz należy do elementu, który ma już treść; element zaczęty pustym wierszem
@@ -421,6 +438,9 @@ func (p *parser) close(n *node) {
 		}
 	case kindBlockQuote:
 		n.endLine = n.markerLine
+		if p.doc.ext&Alerts != 0 {
+			p.detectAlert(n)
+		}
 	case kindList:
 		n.list.tight = listIsTight(n)
 	}

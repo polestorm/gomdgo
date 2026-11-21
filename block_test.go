@@ -268,18 +268,26 @@ func TestCursorTabs(t *testing.T) {
 // corpusConverter: korpus własny jest renderowany przy ustawieniach domyślnych (z rozszerzeniami GFM).
 var corpusConverter = defaultConverter
 
+// extrasConverter: z blokami uwag i przypisami.
+var extrasConverter = New(Config{Enable: Alerts | Footnotes, AlertTitles: map[string]string{"note": "Uwaga", "warning": "Ostrzeżenie"}})
+
 // TestCorpus porównuje wynik dla plików korpusu własnego z plikami wzorcowymi; go test -update je przepisuje.
 func TestCorpus(t *testing.T) {
 	files, _ := filepath.Glob("testdata/corpus/*.md")
-	if len(files) == 0 {
+	extras, _ := filepath.Glob("testdata/corpus-extras/*.md")
+	if len(files) == 0 || len(extras) == 0 {
 		t.Fatal("no corpus files")
 	}
-	for _, path := range files {
+	for _, path := range append(files, extras...) {
 		src, err := os.ReadFile(path)
 		if err != nil {
 			t.Fatal(err)
 		}
-		got, _ := corpusConverter.Render(src)
+		conv := corpusConverter
+		if strings.Contains(path, "corpus-extras") {
+			conv = extrasConverter // rozszerzenia spoza GFM; ten katalog nie wchodzi do porównania z odniesieniem
+		}
+		got, _ := conv.Render(src)
 		golden := strings.TrimSuffix(path, ".md") + ".html"
 		if *update {
 			if err := os.WriteFile(golden, got, 0o644); err != nil {
@@ -296,6 +304,11 @@ func TestCorpus(t *testing.T) {
 		}
 	}
 }
+
+// pathologicalConverter: wszystkie rozszerzenia i odwołania w wierszu, żeby pomiar obejmował wszystkie
+// ścieżki parsera.
+var pathologicalConverter = New(Config{Enable: Alerts | Footnotes,
+	References: func(Reference) (ReferenceLink, error) { return ReferenceLink{}, nil }})
 
 // REQ: DET-003
 func TestPathological(t *testing.T) {
@@ -339,7 +352,7 @@ func TestPathological(t *testing.T) {
 		for i := 0; i < runs; i++ {
 			runtime.GC()
 			start := time.Now()
-			corpusConverter.Render(src) // z rozszerzeniami GFM: obejmuje też ścieżki CommonMark
+			pathologicalConverter.Render(src)
 			best = min(best, time.Since(start))
 		}
 		return best

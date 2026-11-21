@@ -10,7 +10,7 @@ import (
 
 // Extension to zbiór rozszerzeń składni. Rozszerzenia GFM są domyślnie włączone; Config.Disable wyłącza
 // wskazane.
-type Extension uint8
+type Extension uint16
 
 const (
 	// Tables: tabele z wierszem nagłówka i wierszem ograniczników.
@@ -28,8 +28,16 @@ const (
 	// GFM to wszystkie rozszerzenia specyfikacji GitHub Flavored Markdown.
 	GFM = Tables | Strikethrough | TaskLists | Autolinks | TagFilter
 
-	// extSingleTilde to bit wewnętrzny ustawiany przez Config.SingleTilde.
-	extSingleTilde Extension = 1 << 7
+	// Alerts: bloki uwag, cytat zaczynający się od [!NOTE], [!TIP], [!IMPORTANT], [!WARNING] albo
+	// [!CAUTION]. Spoza specyfikacji GFM; włączane przez Config.Enable.
+	Alerts Extension = 1 << 5
+	// Footnotes: przypisy [^etykieta] z definicjami [^etykieta]: treść. Spoza specyfikacji GFM; włączane
+	// przez Config.Enable.
+	Footnotes Extension = 1 << 6
+
+	// Bity wewnętrzne, ustawiane przez Config.SingleTilde i Config.References.
+	extSingleTilde Extension = 1 << 15
+	extReferences  Extension = 1 << 14
 )
 
 // maxPaddedCells ogranicza liczbę komórek, którymi w jednym dokumencie dopełnia się wiersze tabel krótsze

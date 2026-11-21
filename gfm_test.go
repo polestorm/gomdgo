@@ -1,6 +1,7 @@
 package gomdgo
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -294,6 +295,24 @@ var pathologicalGFM = []struct {
 	{"many text nodes to merge", func(n int) string { return strings.Repeat("a\\*b_c&amp;", n) + "@d.e" }},
 	{"links around autolinks", func(n int) string { return strings.Repeat("[www.a.b](c) ", n) }},
 	{"filtered tags", func(n int) string { return strings.Repeat("<script><title", n) }},
+	{"reference openers", func(n int) string { return strings.Repeat("[[", n) }},
+	{"unclosed references", func(n int) string { return strings.Repeat("[[a ", n) + strings.Repeat("[[a]", n) }},
+	{"references", func(n int) string { return strings.Repeat("[[a]] ", n) }},
+	{"alerts", func(n int) string { return strings.Repeat("> [!NOTE]\n> a\n\n", n) }},
+	{"nested alert markers", func(n int) string { return strings.Repeat("> ", n) + "[!NOTE]\n" }},
+	{"footnote definitions", func(n int) string { return strings.Repeat("[^a]: b\n", n) }},
+	{"nested footnote definitions", func(n int) string { return strings.Repeat("[^a]: ", n) + "b\n" }},
+	{"footnote references", func(n int) string { return "[^a]: b\n\n" + strings.Repeat("[^a] ", n) }},
+	{"undefined footnote references", func(n int) string { return strings.Repeat("[^a] [^", n) }},
+	{"long footnote labels", func(n int) string { return strings.Repeat("[^"+strings.Repeat("a", 990), n/990+1) }},
+	{"footnote chain", func(n int) string {
+		var b strings.Builder
+		for i := 0; i < n/16; i++ {
+			fmt.Fprintf(&b, "[^%d]: x[^%d]\n", i, i+1)
+		}
+		return b.String() + "\n[^0]\n"
+	}},
+	{"lines inside a footnote", func(n int) string { return "[^a]: b\n" + strings.Repeat("    c\n\n", n) }},
 	{"wide table with short rows", func(n int) string {
 		return strings.Repeat("|a", n/4) + "\n" + strings.Repeat("|-", n/4) + "\n" + strings.Repeat("|b\n", n/6)
 	}},

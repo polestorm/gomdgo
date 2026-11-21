@@ -6,6 +6,7 @@ import (
 	"html"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -13,13 +14,20 @@ import (
 
 // Znaczniki i atrybuty, które renderer ma prawo wytworzyć przy ustawieniach bez przepuszczania HTML.
 var safeTags = map[string][]string{
-	"p": nil, "h1": {"id"}, "h2": {"id"}, "h3": {"id"}, "h4": {"id"}, "h5": {"id"}, "h6": {"id"},
-	"ul": nil, "ol": {"start"}, "li": nil, "blockquote": nil, "pre": nil, "code": {"class"}, "hr": nil, "br": nil,
-	"em": nil, "strong": nil, "a": {"href", "title"}, "img": {"src", "alt", "title"},
+	"p": {"class"}, "h1": {"id"}, "h2": {"id"}, "h3": {"id"}, "h4": {"id"}, "h5": {"id"}, "h6": {"id"},
+	"ul": nil, "ol": {"start"}, "li": {"id"}, "blockquote": {"class"}, "pre": nil, "code": {"class"}, "hr": nil, "br": nil,
+	"em": nil, "strong": nil, "a": {"href", "title", "id", "class"}, "img": {"src", "alt", "title"},
 	// rozszerzenia GFM
 	"table": nil, "thead": nil, "tbody": nil, "tr": nil, "th": {"align", "style"}, "td": {"align", "style"}, "del": nil,
 	"input": {"checked", "disabled", "type"},
+	// rozszerzenia spoza GFM
+	"sup": nil, "section": {"class"},
 }
+
+var (
+	safeAlertClass = regexp.MustCompile(`^alert alert-(note|tip|important|warning|caution)$`)
+	safeFootnoteID = regexp.MustCompile(`^fn(ref)?:[0-9]+(:[0-9]+)?$`)
+)
 
 // checkSafe sprawdza wynik niezależnie od renderera: poprawny fragment, wyłącznie znaczniki i atrybuty
 // z zamkniętej listy, a adresy zakodowane i ze schematem z listy domyślnej albo bez schematu.
@@ -44,8 +52,25 @@ func checkSafe(out []byte) error {
 					return fmt.Errorf("%s=%q: %v", name, value, err)
 				}
 			case "class":
-				if !strings.HasPrefix(value, "language-") {
-					return fmt.Errorf("class %q", value)
+				ok := false
+				switch tag.name {
+				case "code":
+					ok = strings.HasPrefix(value, "language-")
+				case "blockquote":
+					ok = safeAlertClass.MatchString(value)
+				case "p":
+					ok = value == "alert-title"
+				case "a":
+					ok = value == "footnote-backref"
+				case "section":
+					ok = value == "footnotes"
+				}
+				if !ok {
+					return fmt.Errorf("class %q on <%s>", value, tag.name)
+				}
+			case "id":
+				if (tag.name == "a" || tag.name == "li") && !safeFootnoteID.MatchString(value) {
+					return fmt.Errorf("id %q on <%s>", value, tag.name)
 				}
 			case "align":
 				if value != "left" && value != "center" && value != "right" {
@@ -132,7 +157,7 @@ func TestSafeByDefault(t *testing.T) {
 		}
 		inputs = append(inputs, string(b))
 	}
-	for _, conv := range []*Converter{defaultConverter, fuzzCommonMark, fuzzStrict} {
+	for _, conv := range []*Converter{defaultConverter, fuzzCommonMark, fuzzStrict, fuzzExtended} {
 		for _, in := range inputs {
 			out, err := conv.Render([]byte(in))
 			if err != nil {

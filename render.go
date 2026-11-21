@@ -12,6 +12,8 @@ type renderer struct {
 	conv *Converter
 	out  bytes.Buffer
 	ids  map[string]bool // identyfikatory nagłówków użyte w tym przebiegu
+	err  error           // błąd funkcji wywołującego; przerywa renderowanie
+	fn   footnoteState
 }
 
 // cr zaczyna nowy wiersz wyniku, jeśli bieżący nie jest pusty.
@@ -33,7 +35,7 @@ func (r *renderer) render(root *node) {
 			}
 		}
 		r.leave(n)
-		if n == root {
+		if n == root || r.err != nil {
 			return
 		}
 		if n.next != nil {
@@ -63,7 +65,24 @@ func (r *renderer) enter(n *node) bool {
 	switch n.kind {
 	case kindBlockQuote:
 		r.cr()
-		out.WriteString("<blockquote>\n")
+		if n.level == 0 {
+			out.WriteString("<blockquote>\n")
+			break
+		}
+		out.WriteString(`<blockquote class="alert alert-` + alertNames[n.level] + "\">\n")
+		if title := r.conv.alertTitles[n.level]; title != "" {
+			out.WriteString(`<p class="alert-title">`)
+			escapeHTML(out, []byte(title))
+			out.WriteString("</p>\n")
+		}
+	case kindFootnoteDef:
+		// Treść przypisu jest zapisywana na końcu dokumentu, nie w miejscu definicji.
+		if n != r.fn.current {
+			return false
+		}
+		out.WriteString(`<li id="fn:` + strconv.Itoa(r.fn.number[n]) + "\">\n")
+	case kindFootnoteRef:
+		r.footnoteRef(n.ref)
 	case kindList:
 		r.cr()
 		out.WriteString("<" + listTag(n))
@@ -111,6 +130,8 @@ func (r *renderer) enter(n *node) bool {
 			}
 		}
 		out.WriteByte('>')
+	case kindReference:
+		r.reference(n)
 	case kindStrike:
 		out.WriteString("<del>")
 	case kindTaskCheckbox:
@@ -123,11 +144,15 @@ func (r *renderer) enter(n *node) bool {
 		r.cr()
 		out.WriteString("<hr />\n")
 	case kindCodeBlock:
+		lang, info := codeInfo(n)
+		if r.customCodeBlock(n, lang, info) {
+			return false
+		}
 		r.cr()
 		out.WriteString("<pre><code")
-		if lang, _, _ := strings.Cut(strings.ReplaceAll(n.info, "\t", " "), " "); lang != "" {
+		if lang != "" {
 			out.WriteString(` class="language-`)
-			escapeHTML(out, []byte(unescape(lang)))
+			escapeHTML(out, []byte(lang))
 			out.WriteString(`"`)
 		}
 		out.WriteString(">")
@@ -230,7 +255,7 @@ func plainText(root *node) []byte {
 	}
 	for n := root.first; ; {
 		switch n.kind {
-		case kindText, kindCode:
+		case kindText, kindCode, kindReference:
 			out = append(out, n.literal...)
 		case kindSoftBreak, kindHardBreak:
 			out = append(out, '\n')
@@ -252,7 +277,7 @@ func plainText(root *node) []byte {
 // łączniki, reszta pominięta. Powtórzony identyfikator dostaje kolejny numer.
 func (r *renderer) headingID(n *node) string {
 	var b strings.Builder
-	for _, c := range string(plainText(n)) {
+	for _, c := range string(bytes.TrimSpace(plainText(n))) {
 		switch {
 		case unicode.IsLetter(c) || unicode.IsDigit(c):
 			b.WriteRune(unicode.ToLower(c))
@@ -309,8 +334,21 @@ func (r *renderer) leave(n *node) {
 		out.WriteString("</li>\n")
 	case kindParagraph:
 		if !tightParagraph(n) {
+			if n.parent == r.fn.current && n.next == nil {
+				r.backrefs(n.parent, true) // odnośnik powrotny na końcu ostatniego akapitu przypisu
+			}
 			out.WriteString("</p>\n")
 		}
+	case kindFootnoteDef:
+		if n != r.fn.current {
+			break
+		}
+		if n.last == nil || n.last.kind != kindParagraph {
+			r.cr()
+			r.backrefs(n, false)
+			out.WriteByte('\n')
+		}
+		out.WriteString("</li>\n")
 	case kindHeading:
 		out.WriteString("</h" + strconv.Itoa(n.level) + ">\n")
 	case kindTable:

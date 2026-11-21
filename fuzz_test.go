@@ -11,6 +11,24 @@ import (
 var fuzzStrict = New(Config{RawHTML: RawHTMLOmit, Schemes: []string{}, HeadingIDs: true,
 	SingleTilde: true, TableAlignStyle: true})
 
+// fuzzExtended: punkty rozszerzeń z funkcjami, które zwracają wynik bezpieczny, więc cały wynik musi przejść
+// sprawdzian bezpieczeństwa.
+var fuzzExtended = New(Config{
+	Enable:      Alerts | Footnotes,
+	AlertTitles: map[string]string{"note": "Uwaga <&>", "caution": "!"},
+	HeadingIDs:  true,
+	CodeBlocks: map[string]CodeBlockFunc{"x": func(b CodeBlock) ([]byte, error) {
+		var out bytes.Buffer
+		out.WriteString("<pre>")
+		escapeHTML(&out, b.Code)
+		out.WriteString("</pre>")
+		return out.Bytes(), nil
+	}},
+	References: func(r Reference) (ReferenceLink, error) {
+		return ReferenceLink{Href: r.Target, Text: r.Target, Title: r.Target}, nil
+	},
+})
+
 // fuzzCommonMark: czysty CommonMark przy ustawieniach bezpiecznych.
 var fuzzCommonMark = New(Config{Disable: GFM})
 
@@ -23,10 +41,19 @@ func FuzzRender(f *testing.F) {
 	}
 	f.Add([]byte{})
 	f.Add([]byte("\x00\xff<a href=\"x\">&amp;\r\n"))
+	f.Add([]byte("[[a]] [[javascript:x]] *[[b\"<>]]*\n\n```x\n<script>\n```\n\n| [[c]] |\n|-|\n"))
+	f.Add([]byte("> [!NOTE]\n> a[^1]\n\n[^1]: b[^2]\n    c\n[^2]:\n\n# fn:1\n"))
 	f.Fuzz(func(t *testing.T, src []byte) {
 		out := Render(src)
 		if err := checkSafe(out); err != nil {
 			t.Fatalf("unsafe or malformed output: %v\nsource: %q\noutput: %q", err, src, out)
+		}
+		extended, err := fuzzExtended.Render(src)
+		if err != nil {
+			t.Fatalf("extension points returned an error: %v\nsource: %q", err, src)
+		}
+		if err := checkSafe(extended); err != nil {
+			t.Fatalf("unsafe or malformed output (extension points): %v\nsource: %q\noutput: %q", err, src, extended)
 		}
 		plain, _ := fuzzCommonMark.Render(src)
 		if err := checkSafe(plain); err != nil {

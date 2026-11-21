@@ -36,6 +36,8 @@ func TestRequirementsCovered(t *testing.T) {
 		t.Fatal("no requirements found")
 	}
 	corpus, _ := filepath.Glob("testdata/corpus/*.md")
+	extras, _ := filepath.Glob("testdata/corpus-extras/*.md")
+	corpus = append(corpus, extras...)
 	sources := append([]string{}, corpus...)
 	for _, pattern := range []string{"*_test.go", "internal/*/*_test.go"} {
 		m, _ := filepath.Glob(pattern)

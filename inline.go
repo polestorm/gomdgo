@@ -190,6 +190,26 @@ func (p *inlineParser) parse(n *node) {
 			start = i
 
 		case '[':
+			if p.ext&Footnotes != 0 {
+				if label, end := footnoteLabel(text[i:]); end > 0 {
+					if def := p.doc.footnotes[normalizeLabel(label)]; def != nil {
+						flush(i)
+						p.add(kindFootnoteRef, i).ref = def
+						i += end
+						start = i
+						continue
+					}
+				}
+			}
+			if p.ext&extReferences != 0 {
+				if target, end := scanReference(text, i); end > 0 {
+					flush(i)
+					p.add(kindReference, i).literal = text[target.start:target.end]
+					i = end
+					start = i
+					continue
+				}
+			}
 			flush(i)
 			node := p.add(kindText, i)
 			node.literal = text[i : i+1]

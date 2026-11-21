@@ -29,24 +29,28 @@ const (
 	kindHTMLInline
 	kindStrike       // rozszerzenie: przekreślenie
 	kindTaskCheckbox // rozszerzenie: pole wyboru na początku akapitu elementu listy; level 1 = zaznaczone
+	kindReference    // punkt rozszerzenia: odwołanie w wierszu [[cel]]; literal to cel
+	kindFootnoteRef  // rozszerzenie: odwołanie do przypisu; ref wskazuje definicję
 
 	// rozszerzenie: tabela (blok liściowy), jej wiersze i komórki
 	kindTable
 	kindTableRow  // level 0 = wiersz nagłówka
 	kindTableCell // level = numer kolumny
+
+	kindFootnoteDef // rozszerzenie: definicja przypisu (kontener); info to etykieta po normalizacji
 )
 
 var kindNames = [...]string{
 	"document", "block_quote", "list", "item", "paragraph", "heading", "thematic_break", "code_block",
 	"html_block", "ref_defs",
 	"text", "soft_break", "hard_break", "code", "emph", "strong", "link", "image", "html_inline",
-	"strike", "task_checkbox", "table", "table_row", "table_cell",
+	"strike", "task_checkbox", "reference", "footnote_ref", "table", "table_row", "table_cell", "footnote",
 }
 
 func (k kind) String() string { return kindNames[k] }
 
 // isContainer mówi, czy blok może zawierać inne bloki.
-func (k kind) isContainer() bool { return k <= kindItem }
+func (k kind) isContainer() bool { return k <= kindItem || k == kindFootnoteDef }
 
 // span to fragment źródła: przesunięcia bajtowe [start, end).
 type span struct{ start, end int }
@@ -73,7 +77,8 @@ type node struct {
 	contentIndent int      // element listy: szerokość znacznika z odstępem (wcięcie treści)
 	markerLine    int      // cytat: ostatni wiersz ze znacznikiem >
 
-	level  int     // nagłówek: 1–6; wiersz i komórka tabeli, pole wyboru: patrz rodzaje węzłów
+	level  int     // nagłówek: 1–6; cytat: rodzaj bloku uwagi; wiersz i komórka tabeli, pole wyboru: patrz rodzaje
+	ref    *node   // odwołanie do przypisu: jego definicja
 	spans  []span  // akapit, nagłówek i komórka tabeli: wiersze treści do parsowania w wierszu
 	aligns []uint8 // tabela: wyrównania kolumn
 
@@ -171,6 +176,7 @@ type document struct {
 	refs       map[string]*reference
 	lineStarts []int
 	ext        Extension
+	footnotes  map[string]*node // definicje przypisów według etykiety; obowiązuje pierwsza
 }
 
 // position zamienia przesunięcie bajtowe na wiersz i kolumnę, oba od 1; kolumna liczona w bajtach (ADR 0003).

@@ -6,8 +6,10 @@ Markdown → HTML in pure Go, written from the specifications, with no dependenc
 of the CommonMark 0.31.2 specification and all 24 examples of the GFM 0.29 extension sections pass byte for byte.
 Raw HTML is escaped and link destinations are checked against a scheme allow-list unless the caller opts out.
 The GFM extensions are on by default; `Config.Disable` turns them off one by one (`gomdgo.GFM` for plain
-CommonMark). The extension
-points (code block renderers, inline references, the public document tree) are not implemented yet.
+CommonMark). Code blocks
+can be rendered by caller-supplied functions per language and `[[target]]` references resolved by a caller-supplied
+function. Alerts (`> [!NOTE]`) and footnotes are opt-in through `Config.Enable`. `Document.Walk` gives validators a
+read-only view of the document tree with source positions.
 
 ## Usage
 
@@ -15,8 +17,24 @@ points (code block renderers, inline references, the public document tree) are n
 html := gomdgo.Render(src) // CommonMark + GFM, safe defaults, never fails
 
 conv := gomdgo.New(gomdgo.Config{RawHTML: gomdgo.RawHTMLOmit, HeadingIDs: true})
-doc := conv.Parse(src)   // never fails; a validator can inspect the document here
+doc := conv.Parse(src)   // never fails
+doc.Walk(func(n gomdgo.Node, entering bool) bool { // a validator inspects the document here
+    if entering && n.Kind() == gomdgo.KindImage {
+        line, col := n.Position()
+        log.Printf("%d:%d: image %s", line, col, n.Destination())
+    }
+    return true
+})
 out, err := doc.HTML()   // an error can only come from a caller-supplied extension
+
+conv = gomdgo.New(gomdgo.Config{
+    CodeBlocks: map[string]gomdgo.CodeBlockFunc{
+        "mermaid": func(b gomdgo.CodeBlock) ([]byte, error) { return renderDiagram(b.Code) },
+    },
+    References: func(r gomdgo.Reference) (gomdgo.ReferenceLink, error) {
+        return gomdgo.ReferenceLink{Href: "/records/" + r.Target}, nil
+    },
+})
 ``` See [docs/roadmap.md](docs/roadmap.md) for the stages and
 [docs/adr/0001-scope-and-acceptance.md](docs/adr/0001-scope-and-acceptance.md) for the scope and the acceptance
 criteria.
