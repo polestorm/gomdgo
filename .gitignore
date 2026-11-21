@@ -1,0 +1,5 @@
+.DS_Store
+.claude/
+# wyniki parsera odniesienia i podglądy robocze nie trafiają do repozytorium
+/out/
+/ref/
