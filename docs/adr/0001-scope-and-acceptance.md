@@ -36,7 +36,7 @@ Wszystkie muszą być spełnione jednocześnie, zmierzone i zapisane z datą w `
 | K2 | zgodność z GFM | wszystkie przykłady rozdziałów rozszerzeń GFM 0.29-gfm |
 | K3 | podobieństwo do `goldmark` | korpus różnicowy (przykłady specyfikacji, korpus własny, dokumenty odbiorców, wejścia z fuzzingu): HTML po normalizacji identyczny w co najmniej 99,5% przypadków; **każda** różnica opisana w `../differences.md` z uzasadnieniem (gdy `goldmark` odbiega od specyfikacji, wygrywa specyfikacja) |
 | K4 | wymagania | każde wymaganie z `../../requirements/` ma test; testy przechodzą |
-| K5 | odporność | fuzzing bez paniki i z poprawnym HTML co najmniej 24 h łącznie; zestaw przypadków patologicznych w czasie liniowym |
+| K5 | odporność | fuzzing bez paniki i z poprawnym HTML co najmniej 24 h łącznie, liczone na kandydacie do wydania (ADR 0012); zestaw przypadków patologicznych w czasie liniowym |
 | K6 | bezpieczeństwo | testy: brak surowego HTML i niedozwolonych schematów w wyniku przy ustawieniach domyślnych |
 | K7 | wydajność | nie wolniej niż 2× `goldmark` na korpusie, pomiar `go test -bench` |
 | K8 | odbiorca | pliki wzorcowe odbiorcy przechodzą bez zmian po przepięciu z `goldmark` na `gomdgo` |

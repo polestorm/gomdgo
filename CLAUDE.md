@@ -26,7 +26,7 @@ Zacznij od `README.md`, potem `docs/roadmap.md`, `docs/adr/0001-scope-and-accept
 | K2 | GFM 0.29-gfm: wszystkie przykłady rozszerzeń | test przykładów specyfikacji |
 | K3 | ≥ 99,5% wyników identycznych z `goldmark` po normalizacji; każda różnica w `docs/differences.md` | `tools/compare` (osobny moduł) |
 | K4 | każde wymaganie z `requirements/` ma test; testy przechodzą | `TestRequirementsCovered` |
-| K5 | fuzzing ≥ 24 h łącznie bez paniki; przypadki patologiczne w czasie liniowym | `FuzzRender`, `TestPathological` |
+| K5 | fuzzing ≥ 24 h bez paniki na kandydacie do wydania (ADR 0012); przypadki patologiczne w czasie liniowym | `FuzzRender`, `TestPathological` |
 | K6 | domyślnie bez surowego HTML i niedozwolonych schematów adresów | `TestSafeByDefault` |
 | K7 | nie wolniej niż 2× `goldmark` | `BenchmarkCorpus` w `tools/compare` |
 | K8 | pliki wzorcowe odbiorcy przechodzą bez zmian po przepięciu | u odbiorcy, etap 7 |
@@ -40,8 +40,8 @@ kolumnę „Stan” w `docs/roadmap.md`.
 - etapy w kolejności z `docs/roadmap.md`; etapy 0–4 są gotowe (K1: 652/652; K2: 24/24; K6: `TestSafeByDefault`),
   etap 5 też: punkty rozszerzeń (`extend.go`, ADR 0009), `Document.Walk` (`walk.go`, ADR 0010), bloki uwag
   i przypisy (`extras.go`, ADR 0011); **etap 6 w toku**: K7 zmierzone (`BenchmarkCorpus`), pakiet dowodów
-  generuje `tools/evidence`, korpus dokumentów rzeczywistych opisuje `docs/testing.md`; zostaje fuzzing do 24 h
-  łącznie (K5), a potem etap 7 z dokumentami odbiorcy (K8);
+  generuje `tools/evidence`, korpus dokumentów rzeczywistych opisuje `docs/testing.md`; K5 liczymy na kandydacie
+  do wydania (ADR 0012), więc zamknie się po etapie 7 z dokumentami odbiorcy (K8); do tego czasu przebiegi pośrednie;
   API według ADR 0005 (`New(Config).Parse(src).HTML()`), polityka bezpieczeństwa według ADR 0006, rozszerzenia
   według ADR 0007 i 0008 (`gfm.go`): GFM domyślnie włączone, `Config.Disable` wyłącza;
 - układ kodu: `block.go` (faza 1, wiersz po wierszu), `inline.go` (faza 2, stos ograniczników i stos nawiasów),
@@ -51,7 +51,8 @@ kolumnę „Stan” w `docs/roadmap.md`.
 - miara postępu: `go test -v -run TestSpec .`; listy zaliczonych przykładów `testdata/spec/passing-*.txt` przepisuje
   `go test -update .` (opis w `docs/testing.md`); porównanie z odniesieniem: `tools/compare`;
 - pytania otwarte w `docs/adr/open-questions.md`: 8 (pozostałe wybory robocze z ADR 0006 i 0007)
-  do potwierdzenia, pytanie 2 (licencja) nie blokuje pracy;
+  do potwierdzenia; licencja to Apache 2.0 (ADR 0013), a porównanie z `goldmark` w `README.md` trzeba
+  uaktualniać razem z liczbami w `docs/testing.md`;
 - wymagania piszemy razem z etapem, w plikach według prefiksów z `requirements/README.md`;
 - najpierw test (przykład specyfikacji albo plik korpusu), potem kod; liczba zaliczonych przykładów nie spada między
   commitami bez wpisu, dlaczego;

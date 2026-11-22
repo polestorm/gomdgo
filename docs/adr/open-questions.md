@@ -3,6 +3,7 @@
 Numery są stałe; pytania rozstrzygnięte znikają z listy, a decyzja jest w ADR.
 
 - pytanie 1 (przykłady specyfikacji w repozytorium) → rozstrzygnięte, `0002-spec-examples-in-repo.md`;
+- pytanie 2 (licencja) → rozstrzygnięte, `0013-licence.md`;
 - pytanie 3 (publiczne drzewo dokumentu) → rozstrzygnięte, `0010-document-walk.md`;
 - pytanie 4 (wzorzec dla przypisów i bloków uwag) → rozstrzygnięte, `0011-alerts-and-footnotes.md`;
 - pytanie 5 (pozycje w źródle) → rozstrzygnięte, `0003-source-positions.md`;
@@ -11,8 +12,6 @@ Numery są stałe; pytania rozstrzygnięte znikają z listy, a decyzja jest w AD
 - pytanie 9 (rozmiar wyniku dla tabel) → rozstrzygnięte, `0008-compat-and-table-limit.md`;
 - pytanie 10 (zgodność z plikami wzorcowymi odbiorcy przy rozszerzeniach) → rozstrzygnięte, tamże.
 
-2. **Licencja `gomdgo`.** Repozytorium jest prywatne. Czy licencja jak w `gopdfgo` (Apache 2.0), czy zamknięta
-   do czasu decyzji o udostępnieniu? Przy każdej z nich pliki w `testdata/spec/` zostają na CC BY-SA 4.0 (ADR 0002).
 8. **Wybory robocze do potwierdzenia.** Z `0006-safe-output.md`: (b) odnośnik o niedozwolonym schemacie zostaje
    samą treścią zamiast `href=""`; (c) blok HTML jako tekst w `<p>`. Z `0007-extensions.md`: (e) ścisłe czytanie
    specyfikacji GFM (dwie tyldy, odstęp po `[ ]`), z opcjami zgodności z ADR 0008. Z `0009-extension-points.md`: (f) kształt funkcji punktów

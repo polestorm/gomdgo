@@ -56,8 +56,22 @@ Usunięcie numeru z listy wymaga wpisu w opisie commita, dlaczego.
 go test -run xxx -fuzz FuzzRender -fuzztime 10m .
 ```
 
-Czas fuzzingu sumujemy w tabeli pomiarów (kryterium K5: 24 h łącznie). Wejścia, które wywołały błąd, Go zapisuje
+Czas fuzzingu zapisujemy w tabeli pomiarów. Do kryterium K5 liczy się 24 h na kandydacie do wydania; każda zmiana
+kodu biblioteki zeruje licznik, a wcześniejsze przebiegi są pomiarami pośrednimi (ADR 0012). Wejścia, które wywołały błąd, Go zapisuje
 w `testdata/fuzz/FuzzRender/`; trafiają do repozytorium jako testy regresji.
+
+Długi przebieg poza maszyną roboczą (Linux x86-64, bez instalowania Go): budujemy binarkę testową, kopiujemy ją
+z katalogiem `testdata/` i uruchamiamy z katalogu, w którym leży `testdata/`:
+
+```sh
+GOOS=linux GOARCH=amd64 go test -c -fuzz FuzzRender -o gomdgo.test .
+# na maszynie docelowej; katalog pamięci podręcznej musi być podany jawnie
+nohup nice -n 10 ./gomdgo.test -test.run xxx -test.fuzz FuzzRender -test.fuzztime 24h -test.parallel 3 \
+  -test.fuzzcachedir "$PWD/cache" > fuzz.log 2>&1 < /dev/null &
+```
+
+Wynik to ostatnie wiersze `fuzz.log` (`PASS` albo opis błędu); wejście, które wywołało błąd, binarka zapisuje
+w `testdata/fuzz/FuzzRender/` obok siebie i trzeba je przenieść do repozytorium.
 
 ## Porównanie z parserem odniesienia
 
@@ -102,7 +116,7 @@ po normalizacji.
 | 2026-11-21 | `29b7f7d` (etap 3) | 652 / 652 | 2 / 24 | tryb zwykły: 654 / 676 (96,7%), CommonMark 652 / 652, korpus 6 / 6; tryb `-safe`: CommonMark 648 / 652 (99,4%), korpus 6 / 6; `goldmark` v1.8.7 | API z ADR 0005, polityka surowego HTML, lista schematów, identyfikatory nagłówków, niepoprawny UTF-8 (ADR 0004); 4 różnice trybu bezpiecznego to wpis 1 w `differences.md`; fuzzing łącznie 315 s, od tego etapu ze sprawdzianem bezpieczeństwa (7 mln wywołań w ostatnim przebiegu), bez błędu |
 | 2026-11-21 | `6189ebb` (etap 4) | 652 / 652 | **24 / 24** | tryb zwykły, 683 wejścia (676 przykładów + 7 plików korpusu): 681 (99,7%) z `-refalign=attribute`; 681 (99,7%) z `-refalign=style`, czyli odniesienie domyślne wobec `gomdgo` z opcjami zgodności (bez nich 680); tryb `-safe`: 677 (99,1%); `goldmark` v1.8.7 | lista schematów z `tel`; rozszerzenia GFM (domyślnie włączone, `Config.Disable` je wyłącza), opcje zgodności i limit dopełniania tabel (ADR 0007, 0008); CommonMark mierzony z `Disable: GFM`; K2 spełnione przy porównaniu co do bajta; wszystkie różnice opisane w `differences.md` (wiersze 1–8); `TestPathological` ma 80 przypadków; fuzzing łącznie 465 s, bez błędu |
 | 2026-11-21 | `6ebd995` (etap 5) | 652 / 652 | 24 / 24 | bez zmian: 681 / 683 (99,7%); tryb `-safe` 677 / 683 | punkty rozszerzeń (ADR 0009), publiczne drzewo `Document.Walk` (ADR 0010), bloki uwag i przypisy (ADR 0011); żadne z nich nie zmienia wyniku przy ustawieniach domyślnych; `TestPathological` ma 92 przypadki; fuzzing łącznie 615 s, także z punktami rozszerzeń, blokami uwag i przypisami, bez błędu |
-| 2026-11-21 | etap 6, część 1, przed commitem | 652 / 652 | 24 / 24 | przykłady specyfikacji i korpus własny: 681 / 683 (99,7%), tryb `-safe` 677 / 683; dokumenty rzeczywiste: 122 / 123 (99,2%), tryb `-safe` 123 / 123 | K7 zmierzone: stosunek czasu 0,42–0,72 wobec `goldmark` (sekcja „Wydajność”); K9: generator pakietu dowodów; komórki dopełnione bez wyrównania (ADR 0007); fuzzing: przebiegi 30 min (125,9 mln wywołań) i 60 min (127,1 mln wywołań, 2026-11-22) na 4 rdzeniach oraz 8 h (3366,9 mln wywołań, 2026-11-22, osobna sesja), bez błędu; łącznie 34 815 s (9 h 40 min) z wymaganych 24 h |
+| 2026-11-21 | `3acafeb` (etap 6, część 1) | 652 / 652 | 24 / 24 | przykłady specyfikacji i korpus własny: 681 / 683 (99,7%), tryb `-safe` 677 / 683; dokumenty rzeczywiste: 122 / 123 (99,2%), tryb `-safe` 123 / 123 | K7 zmierzone: stosunek czasu 0,42–0,72 wobec `goldmark` (sekcja „Wydajność”); K9: generator pakietu dowodów; komórki dopełnione bez wyrównania (ADR 0007); fuzzing: przebiegi 30 min (125,9 mln wywołań) i 60 min (127,1 mln wywołań, 2026-11-22) na 4 rdzeniach oraz 8 h (3366,9 mln wywołań, 2026-11-22, osobna sesja), bez błędu; łącznie 34 815 s (9 h 40 min), pomiar pośredni (ADR 0012) |
 
 Pomiar samego odniesienia, 2026-11-21, `goldmark` v1.8.7, po normalizacji: CommonMark 652 / 652; rozszerzenia GFM
 22 / 24. Dwa odstępstwa od specyfikacji GFM są zapisane w `differences.md` jako zapowiedziane różnice.
