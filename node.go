@@ -81,6 +81,7 @@ type node struct {
 	ref    *node   // odwołanie do przypisu: jego definicja
 	spans  []span  // akapit, nagłówek i komórka tabeli: wiersze treści do parsowania w wierszu
 	aligns []uint8 // tabela: wyrównania kolumn
+	padded bool    // komórka tabeli: dopełniona, bo wiersz źródła był krótszy niż nagłówek
 
 	literal     []byte // kod, blok HTML, tekst i HTML w wierszu: treść dosłowna
 	trim        int    // kod przez wcięcie: długość treści bez końcowych pustych wierszy

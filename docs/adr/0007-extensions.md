@@ -22,7 +22,9 @@ gdzie parser odniesienia i sam GitHub przyjmują więcej.
    - przekreślenie to dokładnie dwie tyldy z każdej strony; jedna tylda nie przekreśla;
    - znacznik zadania wymaga białego znaku po `]`;
    - rozszerzony autolink kończy się na białym znaku albo `<`, więc obejmuje znaki spoza ASCII w ścieżce;
-   - wyrównanie kolumny trafia do atrybutu `align`, także w komórkach dopełnionych do liczby kolumn.
+   - wyrównanie kolumny trafia do atrybutu `align`.
+   Tam, gdzie specyfikacja milczy, przyjmujemy zachowanie parsera odniesienia: komórka dopełniona do liczby
+   kolumn nie dostaje wyrównania (zmiana z 2026-11-21, po porównaniu na dokumentach rzeczywistych).
    Każdą różnicę wobec parsera odniesienia opisuje `../differences.md`.
 4. **Nagłówkiem tabeli jest ostatni wiersz akapitu** poprzedzający wiersz ograniczników; wcześniejsze wiersze
    zostają akapitem. Specyfikacja tego nie rozstrzyga; tak samo robi parser odniesienia.

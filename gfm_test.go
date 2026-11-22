@@ -53,6 +53,8 @@ func table(head string, rows ...string) string {
 // REQ: GFM-001
 func TestTablesBeyondSpec(t *testing.T) {
 	checkCases(t, corpusConverter, [][2]string{
+		{"|a|b|\n|:-|-:|\n|c|\n|d||", table("<th align=\"left\">a</th>\n<th align=\"right\">b</th>\n",
+			"<td align=\"left\">c</td>\n<td></td>\n", "<td align=\"left\">d</td>\n<td align=\"right\"></td>\n")},
 		{"Wstęp\n| Miasto | Liczba |\n|:--|--:|\n| Łódź | 1 |", "<p>Wstęp</p>\n" +
 			table("<th align=\"left\">Miasto</th>\n<th align=\"right\">Liczba</th>\n", "<td align=\"left\">Łódź</td>\n<td align=\"right\">1</td>\n")},
 		{"a|b\n-|-\n*c*|`d|e`", table("<th>a</th>\n<th>b</th>\n", "<td><em>c</em></td>\n<td>`d</td>\n")},

@@ -142,6 +142,7 @@ func (p *parser) addTableRow(table *node, row span, level int) {
 			p.padded++
 		}
 		cell := &node{kind: kindTableCell, pos: row.end, level: col, startLine: p.lineNo, endLine: p.lineNo}
+		cell.padded = col >= len(cells)
 		if col < len(cells) {
 			cell.pos = row.start + cells[col].start
 			if cells[col].end > cells[col].start {

@@ -122,7 +122,9 @@ func (r *renderer) enter(n *node) bool {
 			out.Truncate(out.Len() - 1)
 			out.WriteString("h")
 		}
-		if a := n.parent.parent.aligns[n.level]; a != alignNone {
+		// Komórka dopełniona nie dostaje wyrównania: specyfikacja tego nie rozstrzyga, a tak robi parser
+		// odniesienia (ADR 0007).
+		if a := n.parent.parent.aligns[n.level]; a != alignNone && !n.padded {
 			if r.conv.cfg.TableAlignStyle {
 				out.WriteString(` style="text-align:` + alignNames[a] + `"`)
 			} else {

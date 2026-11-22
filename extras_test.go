@@ -111,6 +111,9 @@ func TestWalk(t *testing.T) {
 			fmt.Fprintf(&b, " header=%v", n.Header())
 		case KindTableCell:
 			fmt.Fprintf(&b, " column=%d align=%q", n.Column(), n.Align())
+			if n.Padded() {
+				b.WriteString(" padded")
+			}
 		case KindBlockQuote:
 			fmt.Fprintf(&b, " alert=%q", n.Alert())
 		}
@@ -166,7 +169,7 @@ func TestWalk(t *testing.T) {
   table_row 17:1 header=false
    table_cell 17:3 column=0 align="left"
     text 17:3 "c"
-   table_cell 17:6 column=1 align="right"
+   table_cell 17:6 column=1 align="right" padded
  html_block 19:1 "<div>\n"
  thematic_break 21:1
  footnote 25:1 "1"

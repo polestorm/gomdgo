@@ -28,9 +28,9 @@ Zacznij od `README.md`, potem `docs/roadmap.md`, `docs/adr/0001-scope-and-accept
 | K4 | każde wymaganie z `requirements/` ma test; testy przechodzą | `TestRequirementsCovered` |
 | K5 | fuzzing ≥ 24 h łącznie bez paniki; przypadki patologiczne w czasie liniowym | `FuzzRender`, `TestPathological` |
 | K6 | domyślnie bez surowego HTML i niedozwolonych schematów adresów | `TestSafeByDefault` |
-| K7 | nie wolniej niż 2× `goldmark` | `BenchmarkCorpus` |
+| K7 | nie wolniej niż 2× `goldmark` | `BenchmarkCorpus` w `tools/compare` |
 | K8 | pliki wzorcowe odbiorcy przechodzą bez zmian po przepięciu | u odbiorcy, etap 7 |
-| K9 | pakiet dowodów: wymagania → testy → wynik ostatniego przebiegu | etap 7 |
+| K9 | pakiet dowodów: wymagania → testy → wynik ostatniego przebiegu | `tools/evidence`, przekazanie w etapie 7 |
 
 Po każdym etapie dopisz wiersz do tabeli pomiarów w `docs/testing.md` (data, commit, liczby K1–K3) i zaktualizuj
 kolumnę „Stan” w `docs/roadmap.md`.
@@ -39,8 +39,9 @@ kolumnę „Stan” w `docs/roadmap.md`.
 
 - etapy w kolejności z `docs/roadmap.md`; etapy 0–4 są gotowe (K1: 652/652; K2: 24/24; K6: `TestSafeByDefault`),
   etap 5 też: punkty rozszerzeń (`extend.go`, ADR 0009), `Document.Walk` (`walk.go`, ADR 0010), bloki uwag
-  i przypisy (`extras.go`, ADR 0011); **następny krok: etap 6** (utwardzanie: długi fuzzing, korpus różnicowy
-  z dokumentów odbiorców, `BenchmarkCorpus` dla K7);
+  i przypisy (`extras.go`, ADR 0011); **etap 6 w toku**: K7 zmierzone (`BenchmarkCorpus`), pakiet dowodów
+  generuje `tools/evidence`, korpus dokumentów rzeczywistych opisuje `docs/testing.md`; zostaje fuzzing do 24 h
+  łącznie (K5), a potem etap 7 z dokumentami odbiorcy (K8);
   API według ADR 0005 (`New(Config).Parse(src).HTML()`), polityka bezpieczeństwa według ADR 0006, rozszerzenia
   według ADR 0007 i 0008 (`gfm.go`): GFM domyślnie włączone, `Config.Disable` wyłącza;
 - układ kodu: `block.go` (faza 1, wiersz po wierszu), `inline.go` (faza 2, stos ograniczników i stos nawiasów),

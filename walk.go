@@ -140,7 +140,8 @@ func (n Node) Checked() bool { return n.n.kind == kindTaskCheckbox && n.n.level 
 // Header mówi, czy wiersz tabeli jest wierszem nagłówka.
 func (n Node) Header() bool { return n.n.kind == kindTableRow && n.n.level == 0 }
 
-// Column zwraca numer kolumny komórki tabeli, od 0, a Align jej wyrównanie: "", "left", "center" albo "right".
+// Column zwraca numer kolumny komórki tabeli, od 0, a Align wyrównanie tej kolumny: "", "left", "center"
+// albo "right". Padded mówi, że komórki nie było w źródle: wiersz był krótszy niż nagłówek.
 func (n Node) Column() int {
 	if n.n.kind == kindTableCell {
 		return n.n.level
@@ -155,6 +156,9 @@ func (n Node) Align() string {
 	}
 	return ""
 }
+
+// Padded: patrz Column.
+func (n Node) Padded() bool { return n.n.kind == kindTableCell && n.n.padded }
 
 // Alert zwraca rodzaj bloku uwagi ("note", "tip", "important", "warning", "caution") albo "" dla zwykłego
 // cytatu.

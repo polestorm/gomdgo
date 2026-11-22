@@ -32,8 +32,8 @@ Dwie sprawy z etapu 4 (ADR 0007):
 
 + K8 da się spełnić bez zmiany plików wzorcowych odbiorcy w dwóch najczęstszych przypadkach;
 + rozmiar wyniku jest ograniczony przez rozmiar wejścia razy stała plus ok. 1 MB na dopełnione komórki;
-− pozostają różnice wobec odniesienia, na które opcji nie ma (`../differences.md`, wiersze 3, 4, 5, 7): filtr
-  znaczników, wyrównanie komórek dopełnionych, pole wyboru bez odstępu, znaki spoza ASCII w rozszerzonym autolinku.
+− pozostają różnice wobec odniesienia, na które opcji nie ma (`../differences.md`, wiersze 3, 5, 7): filtr
+  znaczników, pole wyboru bez odstępu, znaki spoza ASCII w rozszerzonym autolinku.
   Jeśli pliki wzorcowe odbiorcy na nich polegają, wymagają osobnej decyzji;
 − dokument, który uczciwie potrzebuje ponad 100 000 dopełnionych komórek, dostanie krótsze wiersze bez ostrzeżenia.
   Walidator odbiorcy może to wykryć na drzewie (wiersz z mniejszą liczbą komórek niż nagłówek).
