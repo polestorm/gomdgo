@@ -59,30 +59,47 @@ hard line breaks as an option, XHTML output, caller-defined syntax, and modifica
 [goldmark](https://github.com/yuin/goldmark) is the reference for the differential tests. gomdgo is written from
 the specifications, not from goldmark's source code ([docs/provenance.md](docs/provenance.md)); goldmark is run
 as a black box only. The numbers below compare gomdgo at commit `3acafeb` with goldmark v1.8.7, Go 1.26.6,
-on an Apple M-series machine, measured on 2026-11-21 and 2026-11-22. They are reproduced by `tools/compare`
+on an Apple M-series machine, measured on 2026-11-22. They are reproduced by `tools/compare`
 ([docs/testing.md](docs/testing.md)).
+
+The "gomdgo advantage" column is `(goldmark − gomdgo) / goldmark × 100%` for measures where less is better.
+A positive value means gomdgo does better, a negative value means it does worse.
 
 ### Size
 
-| | gomdgo | goldmark | Ratio |
+| Measure | gomdgo | goldmark | gomdgo advantage |
 |---|---:|---:|---:|
-| Library code without tests | 3,561 lines in 14 files | 13,293 lines in 53 files | 0.27 |
-| Packages | 1 | 11 | |
-| Added to a binary (a "stdin → HTML" program with GFM, `-ldflags="-s -w"`, macOS arm64) | 466 kB | 1,289 kB | 0.36 |
+| Lines of library code, without tests | 3,561 | 13,293 | +73.2% |
+| Bytes of library code, without tests | 98,765 | 461,450 | +78.6% |
+| Source files | 14 | 53 | +73.6% |
+| Added to a binary (a "stdin → HTML" program with GFM, `-ldflags="-s -w"`, macOS arm64) | 466 kB | 1,289 kB | +63.8% |
 
-### Speed
+### Speed, memory and output size
 
-`BenchmarkCorpus` in `tools/compare`, median of three runs. A fuzzing job was running in the background during
-the measurement, so the ratio is meaningful and the absolute times are overstated.
+`BenchmarkCorpus` in `tools/compare`, median of five runs, measured on 2026-11-22.
 
-| Input | gomdgo | goldmark | Time ratio | Memory, gomdgo / goldmark |
-|---|---:|---:|---:|---:|
-| 652 CommonMark examples, one by one | 1.20 ms | 2.85 ms | 0.42 | 1.5 MB / 4.4 MB |
-| 7 files of the project corpus, one by one | 0.23 ms | 0.39 ms | 0.58 | 0.29 MB / 0.26 MB |
-| one 258 kB document | 13.8 ms | 19.3 ms | 0.72 | 13.5 MB / 10.5 MB |
-| 123 real documents, 948 kB | 20.1 ms | 30.9 ms | 0.65 | 20.6 MB / 17.8 MB |
+| Input | Measure | gomdgo | goldmark | gomdgo advantage |
+|---|---|---:|---:|---:|
+| 652 CommonMark examples, one by one | time | 0.52 ms | 1.24 ms | **+58.0%** |
+| | memory | 1.53 MB | 4.42 MB | +65.4% |
+| | allocations | 12,742 | 18,450 | +30.9% |
+| | output size | 27,572 B | 27,444 B | −0.5% |
+| 7 files of the project corpus, one by one | time | 0.091 ms | 0.180 ms | **+49.6%** |
+| | memory | 0.290 MB | 0.265 MB | −9.2% |
+| | allocations | 1,550 | 1,753 | +11.6% |
+| | output size | 8,725 B | 8,888 B | +1.8% |
+| one 258 kB document | time | 4.98 ms | 8.44 ms | **+40.9%** |
+| | memory | 13.45 MB | 10.52 MB | −27.9% |
+| | allocations | 65,898 | 74,952 | +12.1% |
+| | output size | 395,400 B | 403,550 B | +2.0% |
+| 123 real documents, about 1 MB | time | 9.36 ms | 15.91 ms | **+41.2%** |
+| | memory | 21.58 MB | 18.58 MB | −16.1% |
+| | allocations | 78,223 | 101,696 | +23.1% |
+| | output size | 1,202,562 B | 1,204,674 B | +0.2% |
 
-gomdgo is 1.4 to 2.4 times faster and uses 16–29% more memory on large documents.
+gomdgo takes 41–58% less time. Across three runs on the same day the time advantage stayed within 58–61%,
+48–51%, 39–43% and 41–42% for the four inputs. Its weak point is memory on large documents, where it uses
+16–28% more. The output is practically the same size.
 
 ### Dependencies
 

@@ -23,6 +23,7 @@ import (
 // korpusu własnego osobno, z rozszerzeniami GFM), large (te same pliki sklejone 50 razy w jeden dokument;
 // bez pliku 003, który kończy się niezamkniętym blokiem kodu i zamieniłby resztę w kod). Dodatkowe pliki
 // można podać w zmiennej GOMDGO_BENCH_FILES (ścieżki rozdzielone znakiem nowego wiersza): zestaw extra.
+// Miara out-bytes to łączny rozmiar wyniku HTML dla zestawu.
 func BenchmarkCorpus(b *testing.B) {
 	examples, err := spectest.Load("../../testdata/spec/commonmark-0.31.2.txt")
 	if err != nil {
@@ -80,25 +81,34 @@ func BenchmarkCorpus(b *testing.B) {
 		b.Run(set.name+"/gomdgo", func(b *testing.B) {
 			b.SetBytes(int64(size))
 			b.ReportAllocs()
+			out := 0
 			for i := 0; i < b.N; i++ {
+				out = 0
 				for _, d := range set.docs {
-					if _, err := conv.Render(d); err != nil {
+					res, err := conv.Render(d)
+					if err != nil {
 						b.Fatal(err)
 					}
+					out += len(res)
 				}
 			}
+			b.ReportMetric(float64(out), "out-bytes")
 		})
 		b.Run(set.name+"/goldmark", func(b *testing.B) {
 			b.SetBytes(int64(size))
 			b.ReportAllocs()
+			out := 0
 			for i := 0; i < b.N; i++ {
+				out = 0
 				for _, d := range set.docs {
 					var buf bytes.Buffer
 					if err := md.Convert(d, &buf); err != nil {
 						b.Fatal(err)
 					}
+					out += buf.Len()
 				}
 			}
+			b.ReportMetric(float64(out), "out-bytes")
 		})
 	}
 }

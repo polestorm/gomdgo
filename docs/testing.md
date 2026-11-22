@@ -149,19 +149,56 @@ go test -run xxx -bench BenchmarkCorpus -benchtime 2s -count 5 .
 GOMDGO_BENCH_FILES="$(cat lista-plików.txt)" go test -run xxx -bench BenchmarkCorpus .   # zestaw extra
 ```
 
-Oba parsery mają ustawienia z porównania różnicowego. Pomiar z 2026-11-21, Apple M-series (10 rdzeni),
-Go 1.26.6, `goldmark` v1.8.7, `-benchtime 1s -count 3`, mediana; w tle działał fuzzing na 4 rdzeniach, więc
-czasy bezwzględne są zawyżone, a miarodajny jest stosunek:
+Oba parsery mają ustawienia z porównania różnicowego. Wynik podajemy jako **przewagę `gomdgo` w procentach**:
+`(goldmark − gomdgo) / goldmark × 100%` dla miar, w których mniej znaczy lepiej (czas, pamięć, liczba alokacji,
+rozmiar wyniku, rozmiar kodu). Wartość dodatnia oznacza, że `gomdgo` wypada lepiej, ujemna, że gorzej. Tak samo
+zapisujemy porównania w `README.md`.
 
-| Zestaw | `gomdgo` | `goldmark` | Stosunek czasu | Pamięć `gomdgo` / `goldmark` |
-|---|---:|---:|---:|---:|
-| spec: 652 przykłady CommonMark, osobno | 1,20 ms | 2,85 ms | 0,42 | 1,5 MB / 4,4 MB |
-| corpus: 7 plików korpusu własnego, osobno | 0,23 ms | 0,39 ms | 0,58 | 0,29 MB / 0,26 MB |
-| large: jeden dokument 258 kB | 13,8 ms | 19,3 ms | 0,72 | 13,5 MB / 10,5 MB |
-| extra: 123 dokumenty rzeczywiste, 948 kB | 20,1 ms | 30,9 ms | 0,65 | 20,6 MB / 17,8 MB |
+Pomiar z 2026-11-22, commit `d8ed0d5` (kod biblioteki jak w `3acafeb`), Apple M-series (10 rdzeni), Go 1.26.6,
+`goldmark` v1.8.7, `-benchtime 2s -count 5`, mediana, średnie obciążenie maszyny 3–5:
 
-K7 wymaga stosunku najwyżej 2; we wszystkich zestawach jest poniżej 1. `gomdgo` zużywa na dużych dokumentach
-o 16–29% więcej pamięci, przy mniejszej liczbie alokacji; kryterium tego nie obejmuje.
+| Zestaw | Miara | `gomdgo` | `goldmark` | Przewaga `gomdgo` |
+|---|---|---:|---:|---:|
+| spec: 652 przykłady CommonMark, osobno | czas | 0,52 ms | 1,24 ms | **+58,0%** |
+| | pamięć | 1,53 MB | 4,42 MB | +65,4% |
+| | alokacje | 12 742 | 18 450 | +30,9% |
+| | rozmiar wyniku | 27 572 B | 27 444 B | −0,5% |
+| corpus: 7 plików korpusu własnego, osobno | czas | 0,091 ms | 0,180 ms | **+49,6%** |
+| | pamięć | 0,290 MB | 0,265 MB | −9,2% |
+| | alokacje | 1 550 | 1 753 | +11,6% |
+| | rozmiar wyniku | 8 725 B | 8 888 B | +1,8% |
+| large: jeden dokument 258 kB | czas | 4,98 ms | 8,44 ms | **+40,9%** |
+| | pamięć | 13,45 MB | 10,52 MB | −27,9% |
+| | alokacje | 65 898 | 74 952 | +12,1% |
+| | rozmiar wyniku | 395 400 B | 403 550 B | +2,0% |
+| extra: 123 dokumenty rzeczywiste, ok. 1 MB | czas | 9,36 ms | 15,91 ms | **+41,2%** |
+| | pamięć | 21,58 MB | 18,58 MB | −16,1% |
+| | alokacje | 78 223 | 101 696 | +23,1% |
+| | rozmiar wyniku | 1 202 562 B | 1 204 674 B | +0,2% |
+
+K7 wymaga czasu najwyżej 2× `goldmark`, czyli przewagi nie mniejszej niż −100%; we wszystkich zestawach przewaga
+jest dodatnia. W trzech przebiegach z tego dnia przewaga czasu wahała się w granicach: spec 58–61%, corpus 48–51%,
+large 39–43%, extra 41–42%; pamięć, alokacje i rozmiar wyniku są powtarzalne. Słabą stroną jest pamięć na dużych
+dokumentach (o 16–28% więcej); kryterium tego nie obejmuje.
+
+Rozmiar wyniku to miara `out-bytes` w wyniku wzorca: łączna liczba bajtów HTML dla zestawu. W zestawach z tabelami
+część różnicy bierze się z zapisu wyrównania (`gomdgo` atrybutem `align`, odniesienie atrybutem `style`,
+`differences.md`); pozostałych źródeł różnicy w bajtach nie rozbieraliśmy, bo porównanie różnicowe działa na
+wyniku znormalizowanym.
+
+Pomiar z 2026-11-21 był robiony przy fuzzingu na 4 rdzeniach w tle i dał przewagę czasu 58%, 42%, 28% i 35%;
+obciążenie zaniżało wynik `gomdgo`. Dokumenty rzeczywiste nie są w repozytorium i zmieniają się, stąd zmienny
+rozmiar zestawu extra.
+
+Rozmiar kodu, pomiar z 2026-11-22 (wiersze i bajty plików `*.go` bez testów; przyrost binarki to program
+„stdin → HTML” z GFM, `-ldflags="-s -w"`, macOS arm64, minus ten sam program bez parsera):
+
+| Miara | `gomdgo` | `goldmark` | Przewaga `gomdgo` |
+|---|---:|---:|---:|
+| wiersze kodu biblioteki | 3 561 | 13 293 | +73,2% |
+| bajty kodu biblioteki | 98 765 | 461 450 | +78,6% |
+| pliki | 14 | 53 | +73,6% |
+| przyrost binarki | 466 kB | 1 289 kB | +63,8% |
 
 ## Pakiet dowodów (K9)
 

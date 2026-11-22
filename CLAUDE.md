@@ -71,4 +71,7 @@ Zasady:
 - każdy obsługiwany element składni ma wymaganie w `requirements/` i test, który je wskazuje;
 - każda decyzja = plik w `docs/adr/`; pytania bez decyzji w `docs/adr/open-questions.md`;
 - liczby (zaliczone przykłady, zgodność z odniesieniem) są datowane i podpisane sposobem pomiaru;
+- porównania z odniesieniem (rozmiar, szybkość, pamięć, rozmiar wyniku) podajemy jako przewagę `gomdgo`
+  w procentach, `(goldmark − gomdgo) / goldmark × 100%`; wartość ujemna oznacza, że `gomdgo` wypada gorzej,
+  i też ją zapisujemy (`docs/testing.md`, `README.md`);
 - opisy commitów po angielsku; przed commitem muszą przechodzić `go vet ./...` i `go test ./...`.
