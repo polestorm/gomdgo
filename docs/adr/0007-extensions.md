@@ -1,6 +1,7 @@
 # 0007 Rozszerzenia GFM: domyślnie włączone, wyłączane jawnie
 
-Status: przyjęta · 2026-11-21 (punkt 1: decyzja właściciela; punkty 3–6: wybory wykonawcy, do potwierdzenia)
+Status: przyjęta · 2026-11-21 (punkt 1: decyzja właściciela; punkty 3–6: wybory wykonawcy, potwierdzone przez
+właściciela 2026-11-22)
 
 ## Kontekst
 

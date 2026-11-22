@@ -34,6 +34,21 @@ conv = gomdgo.New(gomdgo.Config{
 })
 ```
 
+## Command line
+
+```sh
+go install github.com/polestorm/gomdgo/cmd/gomdgo@latest
+
+gomdgo README.md > README.html           # a fragment, safe defaults
+gomdgo -standalone -title "Read me" -heading-ids -o README.html README.md
+cat notes.md | gomdgo -alerts -footnotes
+```
+
+The flags mirror `Config`: `-raw-html escape|omit|pass`, `-schemes`, `-any-scheme`, `-commonmark`, `-alerts`,
+`-footnotes`, `-heading-ids`, `-single-tilde`, `-table-align-style`. The command does not run other programs and
+has no extension points; a `mermaid` code block comes out as an ordinary code block. The stripped binary is
+about 2.0 MB on macOS arm64.
+
 ## What it does
 
 - **CommonMark 0.31.2**, complete.

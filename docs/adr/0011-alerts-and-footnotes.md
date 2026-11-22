@@ -1,7 +1,7 @@
 # 0011 Bloki uwag i przypisy
 
 Status: przyjęta · 2026-11-21 (wzorzec: decyzja właściciela, zamyka pytanie otwarte 4; postać wyniku: wybór
-wykonawcy, do potwierdzenia)
+wykonawcy, potwierdzony przez właściciela 2026-11-22)
 
 ## Kontekst
 

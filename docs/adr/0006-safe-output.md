@@ -1,6 +1,7 @@
 # 0006 Wynik bezpieczny z konstrukcji
 
-Status: przyjęta (punkt 3: decyzja właściciela; punkty 2 i 4 to wybory wykonawcy, do potwierdzenia) · 2026-11-21
+Status: przyjęta · 2026-11-21 (punkt 3: decyzja właściciela; punkty 2 i 4: wybory wykonawcy, potwierdzone przez
+właściciela 2026-11-22)
 
 ## Kontekst
 

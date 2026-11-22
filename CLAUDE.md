@@ -48,10 +48,11 @@ kolumnę „Stan” w `docs/roadmap.md`.
   `links.go`, `htmltag.go`, `escape.go` (skanery wspólne), `render.go` (przejście iteracyjne); każde wyszukiwanie
   w przód, które może zawieść, musi zapamiętać niepowodzenie, a każdy nowy przypadek złośliwy trafia do
   `TestPathological`;
+- `cmd/gomdgo` to proste polecenie Markdown → HTML (ADR 0014): flagi odpowiadają polom `Config`, nie uruchamia
+  innych programów; łączenie z `gomermaidgo` i `gopdfgo` należy do osobnego, czwartego projektu;
 - miara postępu: `go test -v -run TestSpec .`; listy zaliczonych przykładów `testdata/spec/passing-*.txt` przepisuje
   `go test -update .` (opis w `docs/testing.md`); porównanie z odniesieniem: `tools/compare`;
-- pytania otwarte w `docs/adr/open-questions.md`: 8 (pozostałe wybory robocze z ADR 0006 i 0007)
-  do potwierdzenia; licencja to Apache 2.0 (ADR 0013), a porównanie z `goldmark` w `README.md` trzeba
+- pytań otwartych nie ma (`docs/adr/open-questions.md`; wybory robocze potwierdzone 2026-11-22); licencja to Apache 2.0 (ADR 0013), a porównanie z `goldmark` w `README.md` trzeba
   uaktualniać razem z liczbami w `docs/testing.md`;
 - wymagania piszemy razem z etapem, w plikach według prefiksów z `requirements/README.md`;
 - najpierw test (przykład specyfikacji albo plik korpusu), potem kod; liczba zaliczonych przykładów nie spada między

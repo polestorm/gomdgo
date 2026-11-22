@@ -346,20 +346,22 @@ func TestPathological(t *testing.T) {
 	const small, factor, slack = 10_000, 16, 6
 	// Odśmiecanie jest na czas pomiaru wyłączone i wykonywane między pomiarami: inaczej jego koszt, zależny
 	// od tego, co zostawiły wcześniejsze przypadki, przykrywa mierzony algorytm.
+	// Mierzymy czas procesora, nie zegar: na obciążonej maszynie proces bywa wywłaszczany w trakcie pomiaru
+	// i czas zegarowy rośnie kilkukrotnie bez związku z algorytmem.
 	defer debug.SetGCPercent(debug.SetGCPercent(-1))
 	measure := func(src []byte, runs int) time.Duration {
 		best := time.Duration(1 << 62)
 		for i := 0; i < runs; i++ {
 			runtime.GC()
-			start := time.Now()
+			start := cpuTime()
 			pathologicalConverter.Render(src)
-			best = min(best, time.Since(start))
+			best = min(best, cpuTime()-start)
 		}
 		return best
 	}
 	for _, c := range cases {
 		var base, big time.Duration
-		// Jedna powtórka: na obciążonej maszynie pojedynczy pomiar bywa zawyżony kilkukrotnie.
+		// Jedna powtórka na wypadek pomiaru zaburzonego mimo wszystko (np. przez pracę środowiska Go w tle).
 		for attempt := 0; attempt < 2; attempt++ {
 			base = max(measure([]byte(c.gen(small)), 3), 100*time.Microsecond)
 			big = measure([]byte(c.gen(small*factor)), 3)

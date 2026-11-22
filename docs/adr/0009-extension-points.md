@@ -1,6 +1,6 @@
 # 0009 Punkty rozszerzeń: bloki kodu według języka i odwołania w wierszu
 
-Status: przyjęta (robocza: kształt funkcji to wybór wykonawcy, do potwierdzenia przez właściciela) · 2026-11-21
+Status: przyjęta · 2026-11-21 (kształt funkcji: wybór wykonawcy, potwierdzony przez właściciela 2026-11-22)
 
 ## Kontekst
 

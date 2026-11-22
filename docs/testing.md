@@ -25,8 +25,13 @@ obejmuje strukturę bloków (15 przypadków), treść w wierszu (42, lista `path
 GFM, odwołania w wierszu, bloki uwag i przypisy (35, lista `pathologicalGFM`); wszystkie są mierzone
 z włączonymi wszystkimi rozszerzeniami.
 
-`TestPathological` mierzy czas, więc zależy od maszyny: odśmiecanie pamięci jest na czas pomiaru wyłączone,
-liczy się najlepszy z trzech przebiegów, a przekroczenie progu jest sprawdzane drugi raz. Pomiar kontrolny
+`TestPathological` mierzy czas procesora zużyty przez proces (`cpuTime`, `getrusage`), nie czas zegara:
+odśmiecanie pamięci jest na czas pomiaru wyłączone, liczy się najlepszy z trzech przebiegów, a przekroczenie
+progu jest sprawdzane drugi raz. Do 2026-11-22 test mierzył czas zegara i przy dużym obciążeniu maszyny zawodził
+bez związku z kodem. Próba z tego dnia przy sztucznym obciążeniu (40 procesów zajmujących rdzenie, średnie
+obciążenie ponad 120 na 10 rdzeniach): wersja z zegarem zawiodła 5 razy na 5, wersja z czasem procesora przeszła
+5 razy na 5; funkcja o czasie kwadratowym daje w tym pomiarze stosunek 214 przy progu 96, więc test nadal ją
+wykrywa. Poza systemami uniksowymi pomiar wraca do zegara. Pomiar kontrolny
 z 2026-11-21 (160 tys. zagnieżdżonych cytatów w jednym wierszu): parsowanie 41–62 ns na poziom, renderowanie
 147–205 ns na poziom przy rozmiarach od 10 tys. do 640 tys., czyli wzrost liniowy; różnica między małym a dużym
 rozmiarem to koszt pamięci podręcznej procesora, nie algorytmu. `go test -short` pomija ten test.

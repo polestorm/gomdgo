@@ -7,7 +7,7 @@ Status: przyjęta · 2026-11-22 (decyzja właściciela; doprecyzowuje K5 z ADR 0
 ADR 0001 wymaga „fuzzingu co najmniej 24 h łącznie” i nie mówi, czy godziny mają dotyczyć jednej wersji kodu.
 Do 2026-11-22 czas sumowaliśmy przez etapy, choć kod zmieniał się między przebiegami. Godziny fuzzingu mówią
 coś tylko o kodzie, na którym biegły, a kod będzie się jeszcze zmieniał: etap 7 (dokumenty odbiorcy), wybory
-robocze z pytania 8 i poprawki błędów znalezionych przez sam fuzzing.
+robocze z pytania 8 (potwierdzone bez zmian 2026-11-22) i poprawki błędów znalezionych przez sam fuzzing.
 
 ## Decyzja
 
