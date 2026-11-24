@@ -10,7 +10,7 @@ Szacunki z 2026-11-21, w godzinach pracy z asystentem. Kryteria zakończenia ca�
 | 3 | renderer HTML i bezpieczeństwo: escapowanie, lista dozwolonych schematów, polityka surowego HTML (escapuj, pomiń, przepuść), identyfikatory nagłówków | 4–6 h | gotowy 2026-11-21 |
 | 4 | GFM: tabele, przekreślenie, listy zadań, rozszerzone autolinki, filtr znaczników | 8–12 h | gotowy 2026-11-21 |
 | 5 | punkty rozszerzeń: renderer bloku według języka, odwołania w wierszu, bloki uwag, przypisy, publiczne drzewo dokumentu dla walidatorów | 8–12 h | gotowy 2026-11-21 |
-| 6 | utwardzanie: przypadki patologiczne, fuzzing, korpus różnicowy, `differences.md`, testy wydajności | 6–10 h | w toku: dokumenty rzeczywiste, `BenchmarkCorpus` (K7) i generator pakietu dowodów (K9) gotowe 2026-11-21; fuzzing pośredni 9 h 40 min bez błędu; 24 h na kodzie biblioteki z `6975fcd` bez błędu (2026-11-23); 2026-11-24 zmniejszenie pamięci (węzeł drzewa), licznik K5 od nowa, przebieg 24 h w toku (ADR 0012) |
+| 6 | utwardzanie: przypadki patologiczne, fuzzing, korpus różnicowy, `differences.md`, testy wydajności | 6–10 h | w toku: dokumenty rzeczywiste, `BenchmarkCorpus` (K7) i generator pakietu dowodów (K9) gotowe 2026-11-21; fuzzing pośredni 9 h 40 min bez błędu; 24 h na kodzie biblioteki z `9c8577b` bez błędu (2026-11-23); 2026-11-24 zmniejszenie pamięci (węzeł drzewa), licznik K5 od nowa, przebieg 24 h w toku (ADR 0012) |
 | 7 | odbiór: pomiar K1–K9, pakiet dowodów, próba przepięcia u odbiorcy na jego plikach wzorcowych | 3–5 h | — |
 | | **razem** | **65–100 h** | |
 
