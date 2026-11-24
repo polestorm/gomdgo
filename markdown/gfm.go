@@ -8,31 +8,31 @@ import (
 // Rozszerzenia GFM 0.29: tabele, listy zadań, rozszerzone autolinki i filtr znaczników. Przekreślenie jest
 // w inline.go, bo korzysta ze stosu ograniczników.
 
-// Extension to zbiór rozszerzeń składni. Rozszerzenia GFM są domyślnie włączone; Config.Disable wyłącza
-// wskazane.
+// Extension is a set of syntax extensions. The GFM extensions are on by default; Config.Disable turns
+// the listed ones off.
 type Extension uint16
 
 const (
-	// Tables: tabele z wierszem nagłówka i wierszem ograniczników.
+	// Tables: tables with a header row and a delimiter row.
 	Tables Extension = 1 << iota
-	// Strikethrough: przekreślenie ~~tekst~~.
+	// Strikethrough: ~~text~~.
 	Strikethrough
-	// TaskLists: elementy list zaczynające się od [ ] albo [x].
+	// TaskLists: list items that start with [ ] or [x].
 	TaskLists
-	// Autolinks: adresy www., http://, https://, ftp:// i adresy e-mail rozpoznawane w zwykłym tekście.
+	// Autolinks: www., http://, https:// and ftp:// addresses and e-mail addresses recognised in plain text.
 	Autolinks
-	// TagFilter: przy przepuszczaniu surowego HTML dziewięć znaczników zmieniających sposób czytania
-	// dokumentu przez przeglądarkę (m.in. script, style, iframe) jest zapisywanych jako tekst.
+	// TagFilter: when raw HTML is passed through, nine tags that change how a browser reads the document
+	// (script, style, iframe and others) are written as text.
 	TagFilter
 
-	// GFM to wszystkie rozszerzenia specyfikacji GitHub Flavored Markdown.
+	// GFM is all the extensions of the GitHub Flavored Markdown specification.
 	GFM = Tables | Strikethrough | TaskLists | Autolinks | TagFilter
 
-	// Alerts: bloki uwag, cytat zaczynający się od [!NOTE], [!TIP], [!IMPORTANT], [!WARNING] albo
-	// [!CAUTION]. Spoza specyfikacji GFM; włączane przez Config.Enable.
+	// Alerts: a block quote that starts with [!NOTE], [!TIP], [!IMPORTANT], [!WARNING] or [!CAUTION].
+	// Not part of the GFM specification; turned on through Config.Enable.
 	Alerts Extension = 1 << 5
-	// Footnotes: przypisy [^etykieta] z definicjami [^etykieta]: treść. Spoza specyfikacji GFM; włączane
-	// przez Config.Enable.
+	// Footnotes: [^label] references with [^label]: text definitions. Not part of the GFM specification;
+	// turned on through Config.Enable.
 	Footnotes Extension = 1 << 6
 
 	// Bity wewnętrzne, ustawiane przez Config.SingleTilde i Config.References.

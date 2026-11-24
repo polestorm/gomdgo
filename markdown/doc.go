@@ -1,12 +1,12 @@
-// Package markdown zamienia Markdown (CommonMark z rozszerzeniami GFM) na HTML.
+// Package markdown converts Markdown (CommonMark with the GitHub Flavored Markdown extensions) to HTML.
 //
-// Najprostsze użycie to Render(src): CommonMark z rozszerzeniami GFM, wynik bezpieczny domyślnie.
-// Ustawienia przyjmuje New(Config), a Converter.Parse i Document.HTML rozdzielają parsowanie od zapisu
-// (docs/adr/0005-api-shape.md).
+// The simplest use is Render(src): CommonMark with the GFM extensions and output that is safe by default.
+// Settings go into New(Config); Converter.Parse and Document.HTML separate parsing from writing, so that
+// a validator can inspect the document in between with Document.Walk.
 //
-// Pakiet jest w budowie. Gotowe są: pełny CommonMark, rozszerzenia GFM, wynik bezpieczny domyślnie, punkty
-// rozszerzeń, bloki uwag, przypisy i widok drzewa dla walidatorów (Document.Walk); przed nim utwardzanie
-// i pomiar wydajności. Plan etapów jest
-// w docs/roadmap.md, a kryteria, po których pakiet zastąpi parser odniesienia,
-// w docs/adr/0001-scope-and-acceptance.md.
+// Raw HTML from the source is written as text and link destinations are checked against an allow-list of
+// schemes unless Config says otherwise. Instead of raw HTML, the caller plugs in functions: one per code
+// block language (Config.CodeBlocks) and one for [[target]] references (Config.References). The same input
+// and settings always give the same output, byte for byte. The specifications followed are CommonMark
+// 0.31.2 and GFM 0.29; usage examples are in docs/usage.md of the repository.
 package markdown

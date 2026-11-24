@@ -78,7 +78,10 @@ Zasady:
   w osobnym module `tools/compare` i nie jest importowane przez bibliotekę;
 - wzorcem są specyfikacje, nie zachowanie parsera odniesienia: gdy goldmark różni się od specyfikacji, wygrywa
   specyfikacja, a różnicę wpisujemy do `docs/differences.md`;
-- nazwy plików, pakietów i identyfikatorów po angielsku; komentarze i dokumentacja po polsku; `README.md` po angielsku;
+- nazwy plików, pakietów i identyfikatorów po angielsku; komentarze i dokumentacja po polsku; `README.md` i `docs/usage.md` po angielsku;
+  wyjątek: komentarze dokumentacyjne publicznego API (opis pakietu, eksportowane typy, funkcje, metody, stałe,
+  zmienne i pola struktur w `markdown/`) piszemy po angielsku, bo pokazuje je pkg.go.dev (decyzja właściciela
+  z 2026-11-24); komentarze wewnętrzne zostają po polsku;
   komunikaty błędów biblioteki po angielsku, ze stałym kodem do tłumaczenia przez wywołującego;
 - każdy obsługiwany element składni ma wymaganie w `requirements/` i test, który je wskazuje;
 - każda decyzja = plik w `docs/adr/`; pytania bez decyzji w `docs/adr/open-questions.md`;

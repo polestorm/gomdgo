@@ -6,72 +6,72 @@ import (
 	"unicode/utf8"
 )
 
-// RawHTML mówi, co zrobić z surowym HTML ze źródła (bloki HTML i znaczniki w wierszu).
+// RawHTML says what to do with raw HTML from the source (HTML blocks and inline tags).
 type RawHTML uint8
 
 const (
-	// RawHTMLEscape zapisuje surowy HTML jako tekst: czytelnik widzi znaczniki, przeglądarka ich nie wykonuje.
-	// To ustawienie domyślne.
+	// RawHTMLEscape writes raw HTML as text: the reader sees the tags, the browser does not act on them.
+	// This is the default.
 	RawHTMLEscape RawHTML = iota
-	// RawHTMLOmit pomija surowy HTML w wyniku.
+	// RawHTMLOmit leaves raw HTML out of the output.
 	RawHTMLOmit
-	// RawHTMLPass przepuszcza surowy HTML bez zmian. Wynik jest wtedy tak bezpieczny jak źródło.
+	// RawHTMLPass passes raw HTML through unchanged. The output is then only as safe as the source.
 	RawHTMLPass
 )
 
-// Config to ustawienia konwertera. Wartość zerowa daje ustawienia domyślne, bezpieczne.
+// Config holds the settings of a converter. The zero value gives the safe defaults.
 type Config struct {
-	// RawHTML: polityka surowego HTML; domyślnie RawHTMLEscape.
+	// RawHTML is the policy for raw HTML; RawHTMLEscape by default.
 	RawHTML RawHTML
 
-	// Schemes: dozwolone schematy adresów odnośników i obrazów, bez dwukropka; wielkość liter nie ma znaczenia.
-	// nil oznacza listę domyślną (http, https, mailto, tel); pusta lista dopuszcza tylko adresy bez schematu.
-	// Adresy bez schematu (względne, #fragment) są dozwolone zawsze.
+	// Schemes lists the allowed schemes of link and image destinations, without the colon; case is ignored.
+	// nil means the default list (http, https, mailto, tel); an empty list allows only destinations with no
+	// scheme. Destinations with no scheme (relative ones, #fragment) are always allowed.
 	Schemes []string
 
-	// AnyScheme wyłącza sprawdzanie schematów. Wynik jest wtedy tak bezpieczny jak źródło.
+	// AnyScheme turns the scheme check off. The output is then only as safe as the source.
 	AnyScheme bool
 
-	// Disable: rozszerzenia składni do wyłączenia. Domyślnie włączone są wszystkie rozszerzenia GitHub
-	// Flavored Markdown (tabele, przekreślenie, listy zadań, rozszerzone autolinki, filtr znaczników);
-	// Disable: GFM daje czysty CommonMark.
+	// Disable lists syntax extensions to turn off. All GitHub Flavored Markdown extensions are on by
+	// default (tables, strikethrough, task lists, extended autolinks, the tag filter);
+	// Disable: GFM gives plain CommonMark.
 	Disable Extension
 
-	// Enable: rozszerzenia spoza specyfikacji GFM do włączenia: Alerts (bloki uwag) i Footnotes (przypisy).
+	// Enable lists extensions from outside the GFM specification to turn on: Alerts and Footnotes.
 	Enable Extension
 
-	// AlertTitles: tytuły bloków uwag według rodzaju ("note", "tip", "important", "warning", "caution").
-	// Dla rodzaju z niepustym tytułem blok zaczyna się akapitem <p class="alert-title">. Biblioteka nie ma
-	// własnych tytułów, bo nie zna języka dokumentu.
+	// AlertTitles gives alert titles by kind ("note", "tip", "important", "warning", "caution").
+	// For a kind with a non-empty title the alert starts with a <p class="alert-title"> paragraph. The
+	// library has no titles of its own, because it does not know the language of the document.
 	AlertTitles map[string]string
 
-	// SingleTilde (zgodność z parserem odniesienia i z praktyką GitHub): przekreślenie obejmuje także tekst
-	// w pojedynczych tyldach, ~tak~. Bez znaczenia, gdy Strikethrough jest wyłączone. Specyfikacja GFM mówi
-	// o dwóch tyldach.
+	// SingleTilde (compatibility with goldmark and with what GitHub does): text in single tildes, ~like
+	// this~, is struck through as well. It has no effect when Strikethrough is disabled. The GFM
+	// specification requires two tildes.
 	SingleTilde bool
 
-	// TableAlignStyle (zgodność z parserem odniesienia): wyrównanie kolumny tabeli jest zapisywane jako
-	// style="text-align:…" zamiast atrybutu align ze specyfikacji GFM.
+	// TableAlignStyle (compatibility with goldmark): the alignment of a table column is written as
+	// style="text-align:…" instead of the align attribute of the GFM specification.
 	TableAlignStyle bool
 
-	// CodeBlocks: funkcje renderujące bloki kodu ogrodzonego według języka (pierwszego słowa napisu
-	// informacyjnego, z rozróżnieniem wielkości liter), np. "mermaid". Blok o innym języku jest zapisywany
-	// zwykle. Wynik funkcji trafia do dokumentu bez zmian.
+	// CodeBlocks maps a language (the first word of the info string, case-sensitive), for example
+	// "mermaid", to a function that renders fenced code blocks in that language. A block in any other
+	// language is written the usual way. The result of the function goes into the document unchanged.
 	CodeBlocks map[string]CodeBlockFunc
 
-	// References: funkcja rozwiązująca odwołania w wierszu [[cel]]. Gdy jest nil, taki zapis jest zwykłym
-	// tekstem CommonMark.
+	// References resolves inline [[target]] references. When it is nil, such text is ordinary CommonMark
+	// text.
 	References ReferenceFunc
 
-	// HeadingIDs dodaje nagłówkom atrybut id utworzony z ich tekstu, unikalny w dokumencie.
+	// HeadingIDs adds to each heading an id attribute made from its text, unique within the document.
 	HeadingIDs bool
 }
 
-// DefaultSchemes to schematy adresów dozwolone, gdy Config.Schemes jest nil.
+// DefaultSchemes are the destination schemes allowed when Config.Schemes is nil.
 var DefaultSchemes = []string{"http", "https", "mailto", "tel"}
 
-// Converter zamienia Markdown na HTML według ustalonych ustawień. Po utworzeniu jest niezmienny i można
-// go używać z wielu gorutyn jednocześnie.
+// Converter converts Markdown to HTML with fixed settings. It is immutable once created and may be used
+// from many goroutines at the same time.
 type Converter struct {
 	cfg     Config
 	schemes map[string]bool
@@ -81,7 +81,7 @@ type Converter struct {
 	alertTitles [len(alertNames)]string
 }
 
-// New tworzy konwerter. Nieznana wartość Config.RawHTML działa jak RawHTMLEscape.
+// New creates a converter. An unknown value of Config.RawHTML behaves like RawHTMLEscape.
 func New(cfg Config) *Converter {
 	c := &Converter{cfg: cfg, schemes: map[string]bool{}, ext: GFM &^ cfg.Disable & GFM}
 	if cfg.SingleTilde && c.ext&Strikethrough != 0 {
@@ -115,37 +115,37 @@ func New(cfg Config) *Converter {
 
 var defaultConverter = New(Config{})
 
-// Render zamienia źródło Markdown na fragment HTML przy ustawieniach domyślnych: CommonMark z rozszerzeniami
-// GFM. Nie zawodzi dla żadnego wejścia: surowy HTML staje się tekstem, a odnośniki o niedozwolonym schemacie
-// tracą adres.
+// Render converts Markdown source to an HTML fragment with the default settings: CommonMark with the GFM
+// extensions. It does not fail for any input: raw HTML becomes text, and links with a scheme that is not
+// allowed lose their destination.
 func Render(src []byte) []byte {
 	out, _ := defaultConverter.Parse(src).HTML() // bez punktów rozszerzeń błąd nie może powstać
 	return out
 }
 
-// Parse czyta źródło Markdown i zwraca dokument. Nie zawodzi dla żadnego wejścia: każdy ciąg bajtów jest
-// jakimś dokumentem Markdown.
+// Parse reads Markdown source and returns a document. It does not fail for any input: every sequence of
+// bytes is some Markdown document.
 func (c *Converter) Parse(src []byte) *Document {
 	return &Document{conv: c, doc: parse(sanitize(src), c.ext)}
 }
 
-// Render to skrót: Parse, a potem Document.HTML.
+// Render is a shortcut for Parse followed by Document.HTML.
 func (c *Converter) Render(src []byte) ([]byte, error) {
 	return c.Parse(src).HTML()
 }
 
-// Document to sparsowany dokument: drzewo i definicje odsyłaczy. Jest niezmienny; HTML można wołać
-// wielokrotnie i z wielu gorutyn.
+// Document is a parsed document: the tree and the link reference definitions. It is immutable; HTML may
+// be called many times and from many goroutines.
 //
-// Dostęp do drzewa dla walidatorów dojdzie w etapie 5 (pytanie 3 w docs/adr/open-questions.md).
+// Walk gives validators read-only access to the tree.
 type Document struct {
 	conv *Converter
 	doc  *document
 }
 
-// HTML zapisuje dokument jako fragment HTML. Błąd może pochodzić wyłącznie z funkcji wywołującego
-// podłączonej w punkcie rozszerzenia (Config.CodeBlocks, Config.References) i ma typ *Error; bez takich
-// funkcji jest zawsze nil.
+// HTML writes the document as an HTML fragment. An error can only come from a caller-supplied function
+// plugged into an extension point (Config.CodeBlocks, Config.References) and has the type *Error; without
+// such functions it is always nil.
 func (d *Document) HTML() ([]byte, error) {
 	r := renderer{doc: d.doc, conv: d.conv}
 	// Wynik jest zwykle 1,2–1,6 raza dłuższy od źródła; rezerwacja z góry oszczędza kolejne powiększenia bufora.

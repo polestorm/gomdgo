@@ -8,52 +8,52 @@ import (
 // Punkty rozszerzeń: miejsca, w których wynik dla fragmentu dokumentu dostarcza funkcja wywołującego
 // (ADR 0001 punkt 2, ADR 0009). Są to jedyne miejsca, z których Document.HTML może zwrócić błąd.
 
-// CodeBlock to blok kodu ogrodzonego przekazywany funkcji wywołującego.
+// CodeBlock is a fenced code block handed to the caller's function.
 type CodeBlock struct {
-	Lang string // pierwsze słowo napisu informacyjnego, po rozwinięciu znaków ucieczki i odwołań znakowych
-	Info string // cały napis informacyjny, po rozwinięciu
-	Code []byte // treść bloku; kopia, którą funkcja może zmieniać
-	Line int    // wiersz otwierającego ogrodzenia w źródle, od 1
+	Lang string // the first word of the info string, escapes and character references resolved
+	Info string // the whole info string, resolved
+	Code []byte // the content of the block; a copy the function may modify
+	Line int    // the line of the opening fence in the source, from 1
 }
 
-// CodeBlockFunc zwraca fragment HTML dla bloku kodu. Wynik trafia do dokumentu bez zmian, więc za jego
-// bezpieczeństwo odpowiada funkcja: gwarancje wyniku bezpiecznego z konstrukcji go nie obejmują.
+// CodeBlockFunc returns an HTML fragment for a code block. The result goes into the document unchanged,
+// so the function is responsible for its safety: the guarantees of safe output do not cover it.
 type CodeBlockFunc func(CodeBlock) ([]byte, error)
 
-// Reference to odwołanie w wierszu [[cel]] przekazywane funkcji wywołującego.
+// Reference is an inline [[target]] reference handed to the caller's function.
 type Reference struct {
-	Target string // tekst między nawiasami, bez białych znaków na brzegach
-	Line   int    // pozycja odwołania w źródle, od 1
+	Target string // the text between the brackets, trimmed
+	Line   int    // the position of the reference in the source, from 1
 	Column int
 }
 
-// ReferenceLink to odpowiedź funkcji wywołującego na odwołanie w wierszu. Renderer buduje z niej odnośnik
-// tak samo jak z odnośnika w źródle: adres przechodzi przez listę dozwolonych schematów, tekst i tytuł są
-// escapowane. Wynik pozostaje więc bezpieczny z konstrukcji.
+// ReferenceLink is the answer of the caller's function to an inline reference. The renderer builds a link
+// from it in the same way as from a link in the source: the destination is checked against the allowed
+// schemes, the text and the title are escaped. The output therefore stays safe.
 type ReferenceLink struct {
-	Href  string // adres; pusty oznacza, że odwołanie nie jest odnośnikiem i zostaje samym tekstem
-	Text  string // tekst odnośnika; pusty oznacza cel odwołania
-	Title string // opcjonalny tytuł
+	Href  string // the destination; empty means the reference is not a link and stays plain text
+	Text  string // the link text; empty means the target of the reference
+	Title string // an optional title
 }
 
-// ReferenceFunc rozwiązuje odwołanie w wierszu.
+// ReferenceFunc resolves an inline reference.
 type ReferenceFunc func(Reference) (ReferenceLink, error)
 
-// Stałe kody błędów, do tłumaczenia komunikatów przez wywołującego.
+// Stable error codes, so that the caller can translate the messages.
 const (
-	// ErrCodeBlock: funkcja renderująca blok kodu zwróciła błąd.
+	// ErrCodeBlock: the function rendering a code block returned an error.
 	ErrCodeBlock = "code-block-renderer-failed"
-	// ErrReference: funkcja rozwiązująca odwołanie w wierszu zwróciła błąd.
+	// ErrReference: the function resolving an inline reference returned an error.
 	ErrReference = "reference-resolver-failed"
 )
 
-// Error to błąd renderowania: stały kod, miejsce w źródle i błąd funkcji wywołującego.
+// Error is a rendering error: a stable code, the place in the source and the error of the caller's function.
 type Error struct {
-	Code   string // jedna ze stałych Err…
-	Line   int    // pozycja w źródle, od 1
+	Code   string // one of the Err… constants
+	Line   int    // the position in the source, from 1
 	Column int
-	Detail string // język bloku kodu albo cel odwołania
-	Err    error  // błąd zwrócony przez funkcję wywołującego
+	Detail string // the language of the code block or the target of the reference
+	Err    error  // the error returned by the caller's function
 }
 
 func (e *Error) Error() string {
