@@ -41,7 +41,9 @@ kolumnę „Stan” w `docs/roadmap.md`.
   etap 5 też: punkty rozszerzeń (`extend.go`, ADR 0009), `Document.Walk` (`walk.go`, ADR 0010), bloki uwag
   i przypisy (`extras.go`, ADR 0011); **etap 6 w toku**: K7 zmierzone (`BenchmarkCorpus`), pakiet dowodów
   generuje `tools/evidence`, korpus dokumentów rzeczywistych opisuje `docs/testing.md`; K5 liczymy na kandydacie
-  do wydania (ADR 0012): 24 h bez błędu na kodzie biblioteki z `3acafeb` (2026-11-23); każda zmiana plików `*.go`
+  do wydania (ADR 0012): 24 h bez błędu na kodzie biblioteki z `3acafeb` (2026-11-23), potem zmiana węzła drzewa
+  (`blockData` w `node.go`, mniej pamięci) i nowy przebieg 24 h na Synology od 2026-11-24 19:53, wynik w
+  `~/gomdgo-fuzz/fuzz.log` na serwerze, do wpisania w `docs/testing.md`; każda zmiana plików `*.go`
   katalogu głównego poza testami zeruje licznik, więc poprawki po dokumentach odbiorcy (K8) zbieraj w paczki;
   API według ADR 0005 (`New(Config).Parse(src).HTML()`), polityka bezpieczeństwa według ADR 0006, rozszerzenia
   według ADR 0007 i 0008 (`gfm.go`): GFM domyślnie włączone, `Config.Disable` wyłącza;

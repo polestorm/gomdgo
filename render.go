@@ -99,7 +99,7 @@ func (r *renderer) enter(n *node) bool {
 		}
 	case kindHeading:
 		r.cr()
-		out.WriteString("<h" + strconv.Itoa(n.level))
+		out.WriteString("<h" + strconv.Itoa(int(n.level)))
 		if r.conv.cfg.HeadingIDs {
 			out.WriteString(` id="`)
 			escapeHTML(out, []byte(r.headingID(n)))
@@ -352,7 +352,7 @@ func (r *renderer) leave(n *node) {
 		}
 		out.WriteString("</li>\n")
 	case kindHeading:
-		out.WriteString("</h" + strconv.Itoa(n.level) + ">\n")
+		out.WriteString("</h" + strconv.Itoa(int(n.level)) + ">\n")
 	case kindTable:
 		if n.last != n.first {
 			out.WriteString("</tbody>\n")

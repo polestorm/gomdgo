@@ -131,7 +131,8 @@ func tableDelimiterRow(s []byte) []uint8 {
 // Komórek jest tyle, ile kolumn: brakujące są puste (do limitu maxPaddedCells), nadmiarowe pomijane.
 func (p *parser) addTableRow(table *node, row span, level int) {
 	src := p.doc.src
-	r := &node{kind: kindTableRow, pos: row.start, level: level, startLine: p.lineNo, endLine: p.lineNo}
+	r := newBlock(kindTableRow, row.start, p.lineNo)
+	r.level = int32(level)
 	table.appendChild(r)
 	cells := splitTableRow(src[row.start:row.end])
 	for col := range table.aligns {
@@ -141,7 +142,8 @@ func (p *parser) addTableRow(table *node, row span, level int) {
 			}
 			p.padded++
 		}
-		cell := &node{kind: kindTableCell, pos: row.end, level: col, startLine: p.lineNo, endLine: p.lineNo}
+		cell := newBlock(kindTableCell, row.end, p.lineNo)
+		cell.level = int32(col)
 		cell.padded = col >= len(cells)
 		if col < len(cells) {
 			cell.pos = row.start + cells[col].start

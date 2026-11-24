@@ -148,6 +148,8 @@ type Document struct {
 // funkcji jest zawsze nil.
 func (d *Document) HTML() ([]byte, error) {
 	r := renderer{doc: d.doc, conv: d.conv}
+	// Wynik jest zwykle 1,2–1,6 raza dłuższy od źródła; rezerwacja z góry oszczędza kolejne powiększenia bufora.
+	r.out.Grow(len(d.doc.src) + len(d.doc.src)/2)
 	r.render(d.doc.root)
 	r.footnotes()
 	if r.err != nil {

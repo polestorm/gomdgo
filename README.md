@@ -4,9 +4,10 @@ Markdown → HTML in pure Go, written from the specifications, with no dependenc
 
 **Status: feature complete, hardening in progress.** All 652 examples of the CommonMark 0.31.2 specification and
 all 24 examples of the GFM 0.29 extension sections pass byte for byte. Raw HTML is escaped and link destinations
-are checked against a scheme allow-list unless the caller opts out. The current library code has passed a
-24-hour fuzzing run without a failure. What remains before a first release is the check against the golden files
-of the first consumer (criterion K8 in [docs/adr/0001-scope-and-acceptance.md](docs/adr/0001-scope-and-acceptance.md)).
+are checked against a scheme allow-list unless the caller opts out. The previous version of the library code
+passed a 24-hour fuzzing run without a failure; the run on the current code (after a reduction of memory use)
+started on 2026-11-24. What remains before a first release is that run and the check against the golden files of
+the first consumer (criteria K5 and K8 in [docs/adr/0001-scope-and-acceptance.md](docs/adr/0001-scope-and-acceptance.md)).
 
 ## Usage
 
@@ -91,8 +92,8 @@ hard line breaks as an option, XHTML output, caller-defined syntax, and modifica
 
 [goldmark](https://github.com/yuin/goldmark) is the reference for the differential tests. gomdgo is written from
 the specifications, not from goldmark's source code ([docs/provenance.md](docs/provenance.md)); goldmark is run
-as a black box only. The numbers below compare gomdgo at commit `3acafeb` with goldmark v1.8.7, Go 1.26.6,
-on an Apple M-series machine, measured on 2026-11-22. They are reproduced by `tools/compare`
+as a black box only. The numbers below compare gomdgo with goldmark v1.8.7, Go 1.26.6,
+on an Apple M-series machine, measured on 2026-11-24. They are reproduced by `tools/compare`
 ([docs/testing.md](docs/testing.md)).
 
 The "gomdgo advantage" column is `(goldmark − gomdgo) / goldmark × 100%` for measures where less is better.
@@ -102,37 +103,34 @@ A positive value means gomdgo does better, a negative value means it does worse.
 
 | Measure | gomdgo | goldmark | gomdgo advantage |
 |---|---:|---:|---:|
-| Lines of library code, without tests | 3,561 | 13,293 | +73.2% |
-| Bytes of library code, without tests | 98,765 | 461,450 | +78.6% |
+| Lines of library code, without tests | 3,586 | 13,293 | +73.0% |
+| Bytes of library code, without tests | 99,629 | 461,450 | +78.4% |
 | Source files | 14 | 53 | +73.6% |
 | Added to a binary (a "stdin → HTML" program with GFM, `-ldflags="-s -w"`, macOS arm64) | 466 kB | 1,289 kB | +63.8% |
 
 ### Speed, memory and output size
 
-`BenchmarkCorpus` in `tools/compare`, median of five runs, measured on 2026-11-22.
+`BenchmarkCorpus` in `tools/compare`, median of five runs, measured on 2026-11-24.
 
 | Input | Measure | gomdgo | goldmark | gomdgo advantage |
 |---|---|---:|---:|---:|
-| 652 CommonMark examples, one by one | time | 0.52 ms | 1.24 ms | **+58.0%** |
-| | memory | 1.53 MB | 4.42 MB | +65.4% |
-| | allocations | 12,742 | 18,450 | +30.9% |
+| 652 CommonMark examples, one by one | time | 0.45 ms | 1.30 ms | **+65.3%** |
+| | memory | 1.18 MB | 4.43 MB | +73.4% |
+| | allocations | 12,718 | 18,461 | +31.1% |
 | | output size | 27,572 B | 27,444 B | −0.5% |
-| 7 files of the project corpus, one by one | time | 0.091 ms | 0.180 ms | **+49.6%** |
-| | memory | 0.290 MB | 0.265 MB | −9.2% |
-| | allocations | 1,550 | 1,753 | +11.6% |
+| 7 files of the project corpus, one by one | time | 0.081 ms | 0.184 ms | **+56.0%** |
+| | memory | 0.195 MB | 0.266 MB | +26.7% |
+| | allocations | 1,520 | 1,753 | +13.3% |
 | | output size | 8,725 B | 8,888 B | +1.8% |
-| one 258 kB document | time | 4.98 ms | 8.44 ms | **+40.9%** |
-| | memory | 13.45 MB | 10.52 MB | −27.9% |
-| | allocations | 65,898 | 74,952 | +12.1% |
+| one 258 kB document | time | 3.77 ms | 7.84 ms | **+51.9%** |
+| | memory | 9.50 MB | 10.57 MB | +10.1% |
+| | allocations | 65,886 | 74,992 | +12.1% |
 | | output size | 395,400 B | 403,550 B | +2.0% |
-| 123 real documents, about 1 MB | time | 9.36 ms | 15.91 ms | **+41.2%** |
-| | memory | 21.58 MB | 18.58 MB | −16.1% |
-| | allocations | 78,223 | 101,696 | +23.1% |
-| | output size | 1,202,562 B | 1,204,674 B | +0.2% |
 
-gomdgo takes 41–58% less time. Across three runs on the same day the time advantage stayed within 58–61%,
-48–51%, 39–43% and 41–42% for the four inputs. Its weak point is memory on large documents, where it uses
-16–28% more. The output is practically the same size.
+gomdgo takes 52–65% less time and 10–73% less memory; the spread between the five runs was under 3%. The output
+is practically the same size. An earlier version of the code, measured on 2026-11-22 on 123 real documents
+(about 1 MB), took 41.2% less time than goldmark; that set has not been measured again since the memory use
+was reduced.
 
 ### Other Go libraries
 
@@ -143,27 +141,31 @@ blackfriday v2.1.0; median of five runs).
 
 | Measure | gomdgo | goldmark | gomarkdown | blackfriday |
 |---|---:|---:|---:|---:|
-| CommonMark 0.31.2 examples passed | **652 / 652** | 652 / 652 | 380 / 652 | 332 / 652 |
+| CommonMark 0.31.2 examples passed | 652 / 652 🥇 | 652 / 652 🥇 | 380 / 652 | 332 / 652 |
 | `<script>` in the source, by default | escaped | omitted | passed through | passed through |
 | `javascript:` link, by default | removed | removed | passed through | passed through |
-| Lines of code compiled into a program | **3,561** | 12,850 | 10,719 | 7,911 |
-| Added to a binary | **466 kB** | 1,289 kB | 1,161 kB | 847 kB |
-| Dependencies in `go.mod` | none | none | 2 | none |
-| Time, 652 CommonMark examples | **0.49 ms** | 1.31 ms | 1.51 ms | 1.07 ms |
-| Time, 7 corpus files | **0.095 ms** | 0.188 ms | 0.151 ms | 0.109 ms |
-| Time, one 260 kB document | **4.11 ms** | 7.59 ms | 5.89 ms | 4.73 ms |
-| Memory, one 260 kB document | 13.05 MB | 10.23 MB | **6.96 MB** | 13.50 MB |
+| Lines of code compiled into a program | 3,586 🥇 | 12,850 | 10,719 | 7,911 |
+| Added to a binary | 466 kB 🥇 | 1,289 kB | 1,161 kB | 847 kB |
+| Dependencies in `go.mod` | none 🥇 | none 🥇 | 2 | none 🥇 |
+| Time, 652 CommonMark examples | 0.46 ms 🥇 | 1.30 ms | 1.49 ms | 1.06 ms |
+| Time, 7 corpus files | 0.082 ms 🥇 | 0.188 ms | 0.150 ms | 0.107 ms |
+| Time, one 260 kB document | 3.34 ms 🥇 | 7.47 ms | 5.81 ms | 4.49 ms |
+| Memory, 652 CommonMark examples | 1.18 MB 🥇 | 4.43 MB | 5.31 MB | 5.05 MB |
+| Memory, 7 corpus files | 0.195 MB 🥇 | 0.273 MB | 0.207 MB | 0.345 MB |
+| Memory, one 260 kB document | 8.05 MB | 10.25 MB | 6.96 MB 🥇 | 13.50 MB |
 
-gomdgo advantage in time:
+🥇 marks the best value in a row.
 
-| Input | over goldmark | over gomarkdown | over blackfriday |
-|---|---:|---:|---:|
-| 652 CommonMark examples | +62.8% | +67.7% | +54.4% |
-| 7 corpus files | +49.6% | +37.4% | +13.6% |
-| one 260 kB document | +45.8% | +30.2% | +13.1% |
+gomdgo advantage, `(other − gomdgo) / other × 100%`:
 
-gomdgo advantage in memory on the 260 kB document: −27.5% against goldmark, −87.5% against gomarkdown, +3.3%
-against blackfriday.
+| Input | Measure | over goldmark | over gomarkdown | over blackfriday |
+|---|---|---:|---:|---:|
+| 652 CommonMark examples | time | +64.7% | +69.3% | +56.6% |
+| | memory | +73.4% | +77.8% | +76.7% |
+| 7 corpus files | time | +56.6% | +45.4% | +24.0% |
+| | memory | +28.5% | +5.9% | +43.5% |
+| one 260 kB document | time | +55.3% | +42.5% | +25.6% |
+| | memory | +21.4% | −15.8% | +40.3% |
 
 Notes:
 
@@ -176,7 +178,7 @@ Notes:
 - The 260 kB document is not the one of the previous section. That one contains an unclosed code fence inside
   a block quote, followed by a line outside the quote. CommonMark ends the code block with the quote; gomarkdown
   searches for the closing fence beyond the quote and, when it finds one anywhere later, turns everything in
-  between into code. On that document it rendered half of the content as code and looked 20% faster than gomdgo.
+  between into code. On that document it rendered half of the content as code, which made it look faster than it is.
   The details and the minimal input are in [docs/testing.md](docs/testing.md).
 
 ### Dependencies
@@ -216,8 +218,8 @@ specification.
 - **Maturity.** goldmark has been in wide use since 2019. gomdgo is new and has no production users yet.
 - **Ecosystem.** goldmark has third-party extensions (syntax highlighting, emoji, metadata and others). gomdgo
   has none, by design.
-- **Robustness.** the current gomdgo code has been fuzzed for 24 hours in one run (1.34 billion executions, after
-  9 h 40 min of earlier runs) without a failure, with
+- **Robustness.** gomdgo has been fuzzed for 33 h 40 min (about 5 billion executions, 24 hours of it in one run on
+  the code before the memory reduction of 2026-11-24) without a failure, with
   a check that the output is well-formed and safe. No such measurement was made for goldmark, so this is not
   a claim that goldmark is weaker here.
 

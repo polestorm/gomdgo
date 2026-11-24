@@ -26,7 +26,7 @@ func (p *parser) detectAlert(quote *node) {
 		if alertNames[i] != name {
 			continue
 		}
-		quote.level = i
+		quote.level = int32(i)
 		first.spans = first.spans[1:]
 		first.startLine++
 		if len(first.spans) == 0 {

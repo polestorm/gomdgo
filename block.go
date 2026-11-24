@@ -15,7 +15,8 @@ type parser struct {
 
 func parse(src []byte, ext Extension) *document {
 	p := &parser{doc: document{src: src, refs: map[string]*reference{}, ext: ext, footnotes: map[string]*node{}}}
-	p.doc.root = &node{kind: kindDocument, open: true, startLine: 1, endLine: 1}
+	p.doc.root = newBlock(kindDocument, 0, 1)
+	p.doc.root.open = true
 	p.tip = p.doc.root
 	for off := 0; off < len(src); {
 		end := off
@@ -56,7 +57,7 @@ func (p *parser) inlines() {
 			}
 			ip.parse(n)
 			if task != 0 {
-				n.prependChild(&node{kind: kindTaskCheckbox, pos: n.spans[0].start - 3, level: task - 1})
+				n.prependChild(&node{kind: kindTaskCheckbox, pos: n.spans[0].start - 3, level: int32(task - 1)})
 			}
 		} else if n.first != nil {
 			n = n.first
@@ -163,7 +164,7 @@ starts:
 			if level, content, ok := atxHeading(rest); ok {
 				closeUnmatched()
 				n := p.add(container, kindHeading, pos)
-				n.level = level
+				n.level = int32(level)
 				n.spans = []span{{p.lineOff + j + content.start, p.lineOff + j + content.end}}
 				p.close(n)
 				return
@@ -404,7 +405,8 @@ func (p *parser) add(parent *node, k kind, col int) *node {
 		p.close(parent)
 		parent = parent.parent
 	}
-	n := &node{kind: k, open: true, pos: p.lineOff + col, startLine: p.lineNo, endLine: p.lineNo}
+	n := newBlock(k, p.lineOff+col, p.lineNo)
+	n.open = true
 	parent.appendChild(n)
 	p.tip = n
 	return n

@@ -96,7 +96,7 @@ func (n Node) Title() string {
 // Level zwraca poziom nagłówka (1–6) albo 0.
 func (n Node) Level() int {
 	if n.n.kind == kindHeading {
-		return n.n.level
+		return int(n.n.level)
 	}
 	return 0
 }
@@ -144,7 +144,7 @@ func (n Node) Header() bool { return n.n.kind == kindTableRow && n.n.level == 0 
 // albo "right". Padded mówi, że komórki nie było w źródle: wiersz był krótszy niż nagłówek.
 func (n Node) Column() int {
 	if n.n.kind == kindTableCell {
-		return n.n.level
+		return int(n.n.level)
 	}
 	return 0
 }

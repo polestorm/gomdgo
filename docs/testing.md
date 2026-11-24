@@ -127,6 +127,7 @@ po normalizacji.
 | 2026-11-21 | `6ebd995` (etap 5) | 652 / 652 | 24 / 24 | bez zmian: 681 / 683 (99,7%); tryb `-safe` 677 / 683 | punkty rozszerzeń (ADR 0009), publiczne drzewo `Document.Walk` (ADR 0010), bloki uwag i przypisy (ADR 0011); żadne z nich nie zmienia wyniku przy ustawieniach domyślnych; `TestPathological` ma 92 przypadki; fuzzing łącznie 615 s, także z punktami rozszerzeń, blokami uwag i przypisami, bez błędu |
 | 2026-11-21 | `3acafeb` (etap 6, część 1) | 652 / 652 | 24 / 24 | przykłady specyfikacji i korpus własny: 681 / 683 (99,7%), tryb `-safe` 677 / 683; dokumenty rzeczywiste: 122 / 123 (99,2%), tryb `-safe` 123 / 123 | K7 zmierzone: stosunek czasu 0,42–0,72 wobec `goldmark` (sekcja „Wydajność”); K9: generator pakietu dowodów; komórki dopełnione bez wyrównania (ADR 0007); fuzzing: przebiegi 30 min (125,9 mln wywołań) i 60 min (127,1 mln wywołań, 2026-11-22) na 4 rdzeniach oraz 8 h (3366,9 mln wywołań, 2026-11-22, osobna sesja), bez błędu; łącznie 34 815 s (9 h 40 min), pomiar pośredni (ADR 0012) |
 | 2026-11-23 | `6298d40` (kod biblioteki jak w `3acafeb`) | 652 / 652 | 24 / 24 | bez zmian: 681 / 683 (99,7%); dokumenty rzeczywiste 122 / 123 | **fuzzing do K5 (ADR 0012): 24 h 0 min bez błędu**, 1336,8 mln wywołań, 4860 wejść w korpusie; `FuzzRender` z binarki skompilowanej krzyżowo (linux/amd64), Synology DS224+ (Intel J4125), 3 procesy robocze, start 2026-11-22 11:44, koniec 2026-11-23 11:44; odczyt wyniku 2026-11-24; K5 spełnione dla tego kodu biblioteki, każda jego zmiana zeruje licznik |
+| 2026-11-24 | następny po `0845993` (zmniejszenie pamięci) | 652 / 652 | 24 / 24 | bez zmian: 681 / 683 (99,7%) | węzeł drzewa 288 → 128 bajtów dla treści w wierszu, rezerwacja bufora wyniku: pamięć na dokumencie 260 kB 13,05 → 8,05 MB, czas 4,11 → 3,34 ms; wynik identyczny co do bajta z poprzednią wersją na 4048 plikach; zmiana kodu biblioteki, więc licznik K5 od nowa: fuzzing lokalny 90 s (13,4 mln wywołań) bez błędu, przebieg 24 h na Synology DS224+ rozpoczęty 2026-11-24 19:53 (wynik do dopisania) |
 
 Pomiar samego odniesienia, 2026-11-21, `goldmark` v1.8.7, po normalizacji: CommonMark 652 / 652; rozszerzenia GFM
 22 / 24. Dwa odstępstwa od specyfikacji GFM są zapisane w `differences.md` jako zapowiedziane różnice.
@@ -164,32 +165,40 @@ Oba parsery mają ustawienia z porównania różnicowego. Wynik podajemy jako **
 rozmiar wyniku, rozmiar kodu). Wartość dodatnia oznacza, że `gomdgo` wypada lepiej, ujemna, że gorzej. Tak samo
 zapisujemy porównania w `README.md`.
 
-Pomiar z 2026-11-22, commit `d8ed0d5` (kod biblioteki jak w `3acafeb`), Apple M-series (10 rdzeni), Go 1.26.6,
-`goldmark` v1.8.7, `-benchtime 2s -count 5`, mediana, średnie obciążenie maszyny 3–5:
+Pomiar z 2026-11-24, kod biblioteki po zmniejszeniu węzła drzewa (commit następny po `0845993`), Apple M-series
+(10 rdzeni), Go 1.26.6, `goldmark` v1.8.7, `-benchtime 2s -count 5`, mediana, średnie obciążenie maszyny 3–4,
+rozrzut między przebiegami poniżej 3%:
 
 | Zestaw | Miara | `gomdgo` | `goldmark` | Przewaga `gomdgo` |
 |---|---|---:|---:|---:|
-| spec: 652 przykłady CommonMark, osobno | czas | 0,52 ms | 1,24 ms | **+58,0%** |
-| | pamięć | 1,53 MB | 4,42 MB | +65,4% |
-| | alokacje | 12 742 | 18 450 | +30,9% |
+| spec: 652 przykłady CommonMark, osobno | czas | 0,45 ms | 1,30 ms | **+65,3%** |
+| | pamięć | 1,18 MB | 4,43 MB | +73,4% |
+| | alokacje | 12 718 | 18 461 | +31,1% |
 | | rozmiar wyniku | 27 572 B | 27 444 B | −0,5% |
-| corpus: 7 plików korpusu własnego, osobno | czas | 0,091 ms | 0,180 ms | **+49,6%** |
-| | pamięć | 0,290 MB | 0,265 MB | −9,2% |
-| | alokacje | 1 550 | 1 753 | +11,6% |
+| corpus: 7 plików korpusu własnego, osobno | czas | 0,081 ms | 0,184 ms | **+56,0%** |
+| | pamięć | 0,195 MB | 0,266 MB | +26,7% |
+| | alokacje | 1 520 | 1 753 | +13,3% |
 | | rozmiar wyniku | 8 725 B | 8 888 B | +1,8% |
-| large: jeden dokument 258 kB | czas | 4,98 ms | 8,44 ms | **+40,9%** |
-| | pamięć | 13,45 MB | 10,52 MB | −27,9% |
-| | alokacje | 65 898 | 74 952 | +12,1% |
+| large: jeden dokument 258 kB | czas | 3,77 ms | 7,84 ms | **+51,9%** |
+| | pamięć | 9,50 MB | 10,57 MB | +10,1% |
+| | alokacje | 65 886 | 74 992 | +12,1% |
 | | rozmiar wyniku | 395 400 B | 403 550 B | +2,0% |
-| extra: 123 dokumenty rzeczywiste, ok. 1 MB | czas | 9,36 ms | 15,91 ms | **+41,2%** |
-| | pamięć | 21,58 MB | 18,58 MB | −16,1% |
-| | alokacje | 78 223 | 101 696 | +23,1% |
-| | rozmiar wyniku | 1 202 562 B | 1 204 674 B | +0,2% |
 
 K7 wymaga czasu najwyżej 2× `goldmark`, czyli przewagi nie mniejszej niż −100%; we wszystkich zestawach przewaga
-jest dodatnia. W trzech przebiegach z tego dnia przewaga czasu wahała się w granicach: spec 58–61%, corpus 48–51%,
-large 39–43%, extra 41–42%; pamięć, alokacje i rozmiar wyniku są powtarzalne. Słabą stroną jest pamięć na dużych
-dokumentach (o 16–28% więcej); kryterium tego nie obejmuje.
+jest dodatnia. Zestawu extra (123 dokumenty rzeczywiste) po tej zmianie nie mierzyliśmy.
+
+Pomiar poprzedni, 2026-11-22, kod biblioteki jak w `3acafeb` (węzeł drzewa 288 bajtów): czas 0,52 / 0,091 /
+4,98 ms (przewaga +58,0%, +49,6%, +40,9%), pamięć 1,53 / 0,290 / 13,45 MB (przewaga +65,4%, −9,2%, −27,9%);
+zestaw extra: czas 9,36 ms wobec 15,91 ms (+41,2%), pamięć 21,58 MB wobec 18,58 MB (−16,1%), alokacje 78 223
+wobec 101 696 (+23,1%), rozmiar wyniku 1 202 562 B wobec 1 204 674 B (+0,2%).
+
+Zmniejszenie pamięci (2026-11-24): profil alokacji pokazał, że 68% pamięci zajmują węzły drzewa, każdy po
+288 bajtów niezależnie od rodzaju. Pola potrzebne tylko blokom (lista, ogrodzenie, tabela, wiersze źródła)
+przeszły do osobnej struktury `blockData`, przydzielanej razem z węzłem bloku; węzeł treści w wierszu ma teraz
+128 bajtów. Bufor wyniku jest rezerwowany z góry (1,5× długość źródła). Skutek na dokumencie 260 kB z
+`BenchmarkRivals`: 13,05 → 8,05 MB (−38%), czas 4,11 → 3,34 ms. Wynik HTML starej i nowej wersji jest identyczny
+co do bajta na 4048 plikach (korpus fuzzingu, korpus własny, teksty specyfikacji, dokumenty sklejone) w czterech
+zestawach flag. Zmiana dotyczy kodu biblioteki, więc licznik K5 biegnie od nowa (ADR 0012).
 
 Rozmiar wyniku to miara `out-bytes` w wyniku wzorca: łączna liczba bajtów HTML dla zestawu. W zestawach z tabelami
 część różnicy bierze się z zapisu wyrównania (`gomdgo` atrybutem `align`, odniesienie atrybutem `style`,
@@ -200,13 +209,13 @@ Pomiar z 2026-11-21 był robiony przy fuzzingu na 4 rdzeniach w tle i dał przew
 obciążenie zaniżało wynik `gomdgo`. Dokumenty rzeczywiste nie są w repozytorium i zmieniają się, stąd zmienny
 rozmiar zestawu extra.
 
-Rozmiar kodu, pomiar z 2026-11-22 (wiersze i bajty plików `*.go` bez testów; przyrost binarki to program
+Rozmiar kodu, pomiar z 2026-11-22, liczby `gomdgo` z 2026-11-24 (wiersze i bajty plików `*.go` bez testów; przyrost binarki to program
 „stdin → HTML” z GFM, `-ldflags="-s -w"`, macOS arm64, minus ten sam program bez parsera):
 
 | Miara | `gomdgo` | `goldmark` | Przewaga `gomdgo` |
 |---|---:|---:|---:|
-| wiersze kodu biblioteki | 3 561 | 13 293 | +73,2% |
-| bajty kodu biblioteki | 98 765 | 461 450 | +78,6% |
+| wiersze kodu biblioteki | 3 586 | 13 293 | +73,0% |
+| bajty kodu biblioteki | 99 629 | 461 450 | +78,4% |
 | pliki | 14 | 53 | +73,6% |
 | przyrost binarki | 466 kB | 1 289 kB | +63,8% |
 
@@ -223,38 +232,42 @@ go test -run xxx -bench BenchmarkRivals -benchtime 2s -count 5 .  # czas, pamię
 GOMDGO_DUMP=/jakiś/katalog go test -run TestDumpRivals .          # wyniki HTML do ręcznej analizy
 ```
 
-Pomiar z 2026-11-24: `gomdgo` z kodem biblioteki jak w `3acafeb`, `goldmark` v1.8.7, `gomarkdown/markdown`
-v0.0.0-20261123200727-167101872811, `blackfriday` v2.1.0, Go 1.26.6, macOS arm64. Mediana z 5 przebiegów po 2 s;
-obciążenie maszyny 2–4, rozrzut między przebiegami poniżej 3% (jeden wyjątek: `blackfriday` na zestawie large, 13%).
-Trzy przebiegi tego dnia dały te same wnioski.
+Pomiar z 2026-11-24: `gomdgo` po zmniejszeniu węzła drzewa (commit następny po `0845993`), `goldmark` v1.8.7,
+`gomarkdown/markdown` v0.0.0-20261123200727-167101872811, `blackfriday` v2.1.0, Go 1.26.6, macOS arm64. Mediana
+z 5 przebiegów po 2 s; obciążenie maszyny 2–4, rozrzut między przebiegami poniżej 2%. Przebieg przy obciążeniu
+7–9 dał rozrzut do 40% i został odrzucony.
 
 | Miara | `gomdgo` | `goldmark` | `gomarkdown` | `blackfriday` |
 |---|---:|---:|---:|---:|
 | przykłady CommonMark 0.31.2, bez rozszerzeń | 652 / 652 | 652 / 652 | 353 / 652 | 307 / 652 |
 | przykłady CommonMark 0.31.2, z rozszerzeniami | 642 / 652 | 649 / 652 | 380 / 652 | 332 / 652 |
-| wiersze kodu wkompilowane w program | 3 561 | 12 850 | 10 719 | 7 911 |
+| wiersze kodu wkompilowane w program | 3 586 | 12 850 | 10 719 | 7 911 |
 | przyrost binarki | 466 kB | 1 289 kB | 1 161 kB | 847 kB |
 | zależności w `go.mod` | brak | brak | 2 (nie trafiają do programu z samym parserem) | brak |
-| spec: czas | 0,487 ms | 1,310 ms | 1,506 ms | 1,068 ms |
-| spec: pamięć | 1,53 MB | 4,43 MB | 5,31 MB | 5,05 MB |
-| corpus: czas | 0,095 ms | 0,188 ms | 0,151 ms | 0,109 ms |
-| corpus: pamięć | 0,290 MB | 0,272 MB | 0,207 MB | 0,346 MB |
-| large (260 kB): czas | 4,11 ms | 7,59 ms | 5,89 ms | 4,73 ms |
-| large (260 kB): pamięć | 13,05 MB | 10,23 MB | 6,96 MB | 13,50 MB |
+| spec: czas | 0,459 ms | 1,300 ms | 1,495 ms | 1,058 ms |
+| spec: pamięć | 1,18 MB | 4,43 MB | 5,31 MB | 5,05 MB |
+| corpus: czas | 0,082 ms | 0,188 ms | 0,150 ms | 0,107 ms |
+| corpus: pamięć | 0,195 MB | 0,273 MB | 0,207 MB | 0,345 MB |
+| large (260 kB): czas | 3,34 ms | 7,47 ms | 5,81 ms | 4,49 ms |
+| large (260 kB): pamięć | 8,05 MB | 10,25 MB | 6,96 MB | 13,50 MB |
 | large (260 kB): rozmiar wyniku | 391 320 B | 401 460 B | 368 519 B | 362 699 B |
 
 Przewaga `gomdgo`, `(inna − gomdgo) / inna × 100%`:
 
 | Zestaw | Miara | wobec `goldmark` | wobec `gomarkdown` | wobec `blackfriday` |
 |---|---|---:|---:|---:|
-| spec | czas | +62,8% | +67,7% | +54,4% |
-| | pamięć | +65,4% | +71,1% | +69,7% |
-| corpus | czas | +49,6% | +37,4% | +13,6% |
-| | pamięć | −6,6% | −39,6% | +16,2% |
-| large | czas | +45,8% | +30,2% | +13,1% |
-| | pamięć | −27,5% | −87,5% | +3,3% |
-| rozmiar | wiersze kodu | +72,3% | +66,8% | +55,0% |
+| spec | czas | +64,7% | +69,3% | +56,6% |
+| | pamięć | +73,4% | +77,8% | +76,7% |
+| corpus | czas | +56,6% | +45,4% | +24,0% |
+| | pamięć | +28,5% | +5,9% | +43,5% |
+| large | czas | +55,3% | +42,5% | +25,6% |
+| | pamięć | +21,4% | −15,8% | +40,3% |
+| rozmiar | wiersze kodu | +72,1% | +66,5% | +54,7% |
 | | przyrost binarki | +63,8% | +59,9% | +45,0% |
+
+Przed zmniejszeniem węzła (ten sam dzień, kod jak w `3acafeb`) `gomdgo` miał na tych zestawach: czas 0,487 /
+0,095 / 4,11 ms, pamięć 1,53 / 0,290 / 13,05 MB; przewaga pamięci na zestawie large wynosiła wtedy −27,5%
+wobec `goldmark` i −87,5% wobec `gomarkdown`.
 
 Uwagi do pomiaru:
 
@@ -270,7 +283,7 @@ Uwagi do pomiaru:
   z cytatem. `gomarkdown` szuka zamknięcia dalej, poza cytatem: gdy w dokumencie jest później jakiekolwiek
   ogrodzenie, cała treść pomiędzy staje się kodem. W dokumencie sklejonym 50 razy 25 kopii wychodziło jako kod
   (150 nagłówków `<h1>` zamiast 300, wynik 313 kB zamiast 395 kB), a pomiar pokazywał `gomarkdown` jako
-  szybszy o 20%. Najmniejsze wejście: `> ```⏎abc⏎⏎# Nagłówek⏎⏎> ```⏎⏎koniec` (⏎ to nowy wiersz); `gomdgo`
+  szybszy o 20% od ówczesnego `gomdgo`. Najmniejsze wejście: `> ```⏎abc⏎⏎# Nagłówek⏎⏎> ```⏎⏎koniec` (⏎ to nowy wiersz); `gomdgo`
   i `goldmark` oddają nagłówek, `gomarkdown` zamienia go w kod;
 - pozostałe różnice rozmiaru wyniku to różnice dialektu: `gomarkdown` i `blackfriday` nie robią pól wyboru
   w listach zadań, nie zamieniają `www.example.com` na odnośnik i inaczej zagnieżdżają listy.

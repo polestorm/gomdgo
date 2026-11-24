@@ -63,36 +63,55 @@ type listData struct {
 	tight   bool
 }
 
-// node to węzeł drzewa dokumentu. Jedna struktura obsługuje wszystkie rodzaje bloków; pola spoza rodzaju
-// węzła zostają zerowe.
+// node to węzeł drzewa dokumentu. Pola wspólne dla bloków i treści w wierszu leżą tutaj; pola potrzebne tylko
+// blokom są w blockData. Węzeł treści w wierszu nie ma blockData (wskaźnik jest pusty), dzięki czemu zajmuje
+// 128 bajtów zamiast 288, a to węzły treści w wierszu stanowią większość drzewa.
 type node struct {
-	kind kind
-	open bool // blok przyjmuje jeszcze wiersze
+	kind     kind
+	open     bool  // blok przyjmuje jeszcze wiersze
+	hasTitle bool  // odnośnik i obraz: tytuł podany w źródle
+	level    int32 // nagłówek: 1–6; cytat: rodzaj bloku uwagi; wiersz i komórka tabeli, pole wyboru: patrz rodzaje
 	// pos to przesunięcie bajtowe początku węzła w źródle (ADR 0003); wiersz i kolumnę daje document.position.
 	pos                             int
 	parent, first, last, prev, next *node
-	startLine, endLine              int // pierwszy i ostatni wiersz źródła należący do bloku, od 1
+	*blockData                      // tylko bloki; węzły treści w wierszu mają tu nil
+
+	ref     *node  // odwołanie do przypisu: jego definicja
+	literal []byte // kod, blok HTML, tekst i HTML w wierszu: treść dosłowna
+	info    string // kod ogrodzony: napis informacyjny, surowy; odnośnik i obraz: cel po rozwinięciu
+	title   string // odnośnik i obraz: tytuł po rozwinięciu
+}
+
+// blockData to pola węzła potrzebne tylko blokom. Każdy blok ma własny egzemplarz, przydzielany razem
+// z węzłem (newBlock).
+type blockData struct {
+	startLine, endLine int // pierwszy i ostatni wiersz źródła należący do bloku, od 1
 
 	list          listData // lista i element listy
 	contentIndent int      // element listy: szerokość znacznika z odstępem (wcięcie treści)
 	markerLine    int      // cytat: ostatni wiersz ze znacznikiem >
 
-	level  int     // nagłówek: 1–6; cytat: rodzaj bloku uwagi; wiersz i komórka tabeli, pole wyboru: patrz rodzaje
-	ref    *node   // odwołanie do przypisu: jego definicja
 	spans  []span  // akapit, nagłówek i komórka tabeli: wiersze treści do parsowania w wierszu
 	aligns []uint8 // tabela: wyrównania kolumn
 	padded bool    // komórka tabeli: dopełniona, bo wiersz źródła był krótszy niż nagłówek
 
-	literal     []byte // kod, blok HTML, tekst i HTML w wierszu: treść dosłowna
-	trim        int    // kod przez wcięcie: długość treści bez końcowych pustych wierszy
+	trim        int // kod przez wcięcie: długość treści bez końcowych pustych wierszy
 	fenced      bool
 	fenceChar   byte
 	fenceLen    int
 	fenceIndent int
-	info        string // kod ogrodzony: napis informacyjny, surowy; odnośnik i obraz: cel po rozwinięciu
-	title       string // odnośnik i obraz: tytuł po rozwinięciu
-	hasTitle    bool
 	htmlType    int // blok HTML: warunek początku 1–7
+}
+
+// newBlock tworzy węzeł bloku razem z jego blockData, jednym przydziałem pamięci.
+func newBlock(k kind, pos, line int) *node {
+	b := &struct {
+		node
+		blockData
+	}{}
+	b.node.kind, b.node.pos, b.node.blockData = k, pos, &b.blockData
+	b.startLine, b.endLine = line, line
+	return &b.node
 }
 
 func (n *node) appendChild(c *node) {
