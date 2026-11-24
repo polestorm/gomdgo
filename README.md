@@ -4,9 +4,9 @@ Markdown → HTML in pure Go, written from the specifications, with no dependenc
 
 **Status: feature complete, hardening in progress.** All 652 examples of the CommonMark 0.31.2 specification and
 all 24 examples of the GFM 0.29 extension sections pass byte for byte. Raw HTML is escaped and link destinations
-are checked against a scheme allow-list unless the caller opts out. What remains before a first release is the
-24-hour fuzzing run on the release candidate and the check against the golden files of the first consumer
-(criteria K5 and K8 in [docs/adr/0001-scope-and-acceptance.md](docs/adr/0001-scope-and-acceptance.md)).
+are checked against a scheme allow-list unless the caller opts out. The current library code has passed a
+24-hour fuzzing run without a failure. What remains before a first release is the check against the golden files
+of the first consumer (criterion K8 in [docs/adr/0001-scope-and-acceptance.md](docs/adr/0001-scope-and-acceptance.md)).
 
 ## Usage
 
@@ -48,6 +48,24 @@ The flags mirror `Config`: `-raw-html escape|omit|pass`, `-schemes`, `-any-schem
 `-footnotes`, `-heading-ids`, `-single-tilde`, `-table-align-style`. The command does not run other programs and
 has no extension points; a `mermaid` code block comes out as an ordinary code block. The stripped binary is
 about 2.0 MB on macOS arm64.
+
+### With diagrams: `gomdgo-mermaid`
+
+The same command with one addition: a fenced code block with the language `mermaid` is drawn by
+[gomermaidgo](https://github.com/polestorm/gomermaidgo) and written as inline SVG. It lives in its own module
+inside this repository, so the library itself stays free of dependencies. Build it from a clone:
+
+```sh
+cd cmd/gomdgo-mermaid
+go build -ldflags="-s -w" .              # about 6.3 MB on macOS arm64
+./gomdgo-mermaid -standalone -o doc.html doc.md
+```
+
+The diagram is rendered in the same process, through `Config.CodeBlocks`, so raw HTML in the document is still
+escaped. A diagram that cannot be rendered stops the command with exit code 1 and the line of the block. Go has
+no optional dependencies, which is why this is a second command and not a build tag
+([docs/adr/0015-combined-binary.md](docs/adr/0015-combined-binary.md)). To wire in another renderer, write a
+`main.go` of your own against the public API, as in the usage example above.
 
 ## What it does
 
@@ -116,6 +134,51 @@ gomdgo takes 41–58% less time. Across three runs on the same day the time adva
 48–51%, 39–43% and 41–42% for the four inputs. Its weak point is memory on large documents, where it uses
 16–28% more. The output is practically the same size.
 
+### Other Go libraries
+
+Two more Markdown libraries are in common use in Go: [gomarkdown/markdown](https://github.com/gomarkdown/markdown)
+and its ancestor [blackfriday](https://github.com/russross/blackfriday) v2. Measured on 2026-11-24 with
+`TestRivalsSpec` and `BenchmarkRivals` in `tools/compare` (goldmark v1.8.7, gomarkdown of 2026-11-23,
+blackfriday v2.1.0; median of five runs).
+
+| Measure | gomdgo | goldmark | gomarkdown | blackfriday |
+|---|---:|---:|---:|---:|
+| CommonMark 0.31.2 examples passed | **652 / 652** | 652 / 652 | 380 / 652 | 332 / 652 |
+| `<script>` in the source, by default | escaped | omitted | passed through | passed through |
+| `javascript:` link, by default | removed | removed | passed through | passed through |
+| Lines of code compiled into a program | **3,561** | 12,850 | 10,719 | 7,911 |
+| Added to a binary | **466 kB** | 1,289 kB | 1,161 kB | 847 kB |
+| Dependencies in `go.mod` | none | none | 2 | none |
+| Time, 652 CommonMark examples | **0.49 ms** | 1.31 ms | 1.51 ms | 1.07 ms |
+| Time, 7 corpus files | **0.095 ms** | 0.188 ms | 0.151 ms | 0.109 ms |
+| Time, one 260 kB document | **4.11 ms** | 7.59 ms | 5.89 ms | 4.73 ms |
+| Memory, one 260 kB document | 13.05 MB | 10.23 MB | **6.96 MB** | 13.50 MB |
+
+gomdgo advantage in time:
+
+| Input | over goldmark | over gomarkdown | over blackfriday |
+|---|---:|---:|---:|
+| 652 CommonMark examples | +62.8% | +67.7% | +54.4% |
+| 7 corpus files | +49.6% | +37.4% | +13.6% |
+| one 260 kB document | +45.8% | +30.2% | +13.1% |
+
+gomdgo advantage in memory on the 260 kB document: −27.5% against goldmark, −87.5% against gomarkdown, +3.3%
+against blackfriday.
+
+Notes:
+
+- For gomarkdown and blackfriday the table gives the better of two settings (with their common extensions); with
+  no extensions they pass 353 and 307 examples. They implement an older Markdown dialect, not CommonMark, so
+  their output differs in list nesting, task lists and autolinks.
+- The two dependencies of gomarkdown are not compiled into a program that uses only its parser and HTML renderer.
+- The line count here covers only the packages such a program pulls in, which is why goldmark shows 12,850 lines
+  and not the 13,293 of the whole library in the table above.
+- The 260 kB document is not the one of the previous section. That one contains an unclosed code fence inside
+  a block quote, followed by a line outside the quote. CommonMark ends the code block with the quote; gomarkdown
+  searches for the closing fence beyond the quote and, when it finds one anywhere later, turns everything in
+  between into code. On that document it rendered half of the content as code and looked 20% faster than gomdgo.
+  The details and the minimal input are in [docs/testing.md](docs/testing.md).
+
 ### Dependencies
 
 Neither library has dependencies outside the Go standard library.
@@ -153,7 +216,8 @@ specification.
 - **Maturity.** goldmark has been in wide use since 2019. gomdgo is new and has no production users yet.
 - **Ecosystem.** goldmark has third-party extensions (syntax highlighting, emoji, metadata and others). gomdgo
   has none, by design.
-- **Robustness.** gomdgo has been fuzzed for 9 h 40 min (about 3.6 billion executions) without a failure, with
+- **Robustness.** the current gomdgo code has been fuzzed for 24 hours in one run (1.34 billion executions, after
+  9 h 40 min of earlier runs) without a failure, with
   a check that the output is well-formed and safe. No such measurement was made for goldmark, so this is not
   a claim that goldmark is weaker here.
 

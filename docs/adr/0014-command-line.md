@@ -1,6 +1,6 @@
 # 0014 Polecenie `gomdgo`: proste, bez uruchamiania innych programów
 
-Status: przyjęta · 2026-11-22 (decyzja właściciela)
+Status: przyjęta · 2026-11-22 (decyzja właściciela); uzupełnia ją ADR 0015 (polecenie z diagramami w osobnym module)
 
 ## Kontekst
 

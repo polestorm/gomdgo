@@ -80,6 +80,10 @@ w `testdata/fuzz/FuzzRender/` obok siebie i trzeba je przenieść do repozytoriu
 
 ## Porównanie z parserem odniesienia
 
+Drugim osobnym modułem jest `cmd/gomdgo-mermaid` (polecenie z diagramami, ADR 0015). Jego testy
+(`TestDiagram`, `TestDiagramError`) puszcza się w jego katalogu: `cd cmd/gomdgo-mermaid && go vet . && go test .`.
+Testy wspólnej części poleceń są w `internal/cli` i biegną z katalogu głównego.
+
 `tools/compare` to osobny moduł (`tools/compare/go.mod`, jedyne miejsce z zależnością od `goldmark`). Renderuje
 każde wejście przez `gomdgo` i `goldmark`, normalizuje oba wyniki (`internal/htmlnorm`) i liczy zgodne.
 Dla przykładów specyfikacji podaje też zgodność każdego z parserów ze specyfikacją.
@@ -122,6 +126,7 @@ po normalizacji.
 | 2026-11-21 | `6189ebb` (etap 4) | 652 / 652 | **24 / 24** | tryb zwykły, 683 wejścia (676 przykładów + 7 plików korpusu): 681 (99,7%) z `-refalign=attribute`; 681 (99,7%) z `-refalign=style`, czyli odniesienie domyślne wobec `gomdgo` z opcjami zgodności (bez nich 680); tryb `-safe`: 677 (99,1%); `goldmark` v1.8.7 | lista schematów z `tel`; rozszerzenia GFM (domyślnie włączone, `Config.Disable` je wyłącza), opcje zgodności i limit dopełniania tabel (ADR 0007, 0008); CommonMark mierzony z `Disable: GFM`; K2 spełnione przy porównaniu co do bajta; wszystkie różnice opisane w `differences.md` (wiersze 1–8); `TestPathological` ma 80 przypadków; fuzzing łącznie 465 s, bez błędu |
 | 2026-11-21 | `6ebd995` (etap 5) | 652 / 652 | 24 / 24 | bez zmian: 681 / 683 (99,7%); tryb `-safe` 677 / 683 | punkty rozszerzeń (ADR 0009), publiczne drzewo `Document.Walk` (ADR 0010), bloki uwag i przypisy (ADR 0011); żadne z nich nie zmienia wyniku przy ustawieniach domyślnych; `TestPathological` ma 92 przypadki; fuzzing łącznie 615 s, także z punktami rozszerzeń, blokami uwag i przypisami, bez błędu |
 | 2026-11-21 | `3acafeb` (etap 6, część 1) | 652 / 652 | 24 / 24 | przykłady specyfikacji i korpus własny: 681 / 683 (99,7%), tryb `-safe` 677 / 683; dokumenty rzeczywiste: 122 / 123 (99,2%), tryb `-safe` 123 / 123 | K7 zmierzone: stosunek czasu 0,42–0,72 wobec `goldmark` (sekcja „Wydajność”); K9: generator pakietu dowodów; komórki dopełnione bez wyrównania (ADR 0007); fuzzing: przebiegi 30 min (125,9 mln wywołań) i 60 min (127,1 mln wywołań, 2026-11-22) na 4 rdzeniach oraz 8 h (3366,9 mln wywołań, 2026-11-22, osobna sesja), bez błędu; łącznie 34 815 s (9 h 40 min), pomiar pośredni (ADR 0012) |
+| 2026-11-23 | `6298d40` (kod biblioteki jak w `3acafeb`) | 652 / 652 | 24 / 24 | bez zmian: 681 / 683 (99,7%); dokumenty rzeczywiste 122 / 123 | **fuzzing do K5 (ADR 0012): 24 h 0 min bez błędu**, 1336,8 mln wywołań, 4860 wejść w korpusie; `FuzzRender` z binarki skompilowanej krzyżowo (linux/amd64), Synology DS224+ (Intel J4125), 3 procesy robocze, start 2026-11-22 11:44, koniec 2026-11-23 11:44; odczyt wyniku 2026-11-24; K5 spełnione dla tego kodu biblioteki, każda jego zmiana zeruje licznik |
 
 Pomiar samego odniesienia, 2026-11-21, `goldmark` v1.8.7, po normalizacji: CommonMark 652 / 652; rozszerzenia GFM
 22 / 24. Dwa odstępstwa od specyfikacji GFM są zapisane w `differences.md` jako zapowiedziane różnice.
@@ -204,6 +209,71 @@ Rozmiar kodu, pomiar z 2026-11-22 (wiersze i bajty plików `*.go` bez testów; p
 | bajty kodu biblioteki | 98 765 | 461 450 | +78,6% |
 | pliki | 14 | 53 | +73,6% |
 | przyrost binarki | 466 kB | 1 289 kB | +63,8% |
+
+## Porównanie z innymi bibliotekami Go
+
+Poza parserem odniesienia są w Go dwie znane biblioteki Markdown: `gomarkdown/markdown` i jego przodek
+`blackfriday` v2. Nie są kryterium (K3 i K7 liczymy tylko wobec `goldmark`); zestawienie służy do `README.md`.
+Wszystkie biblioteki uruchamiamy przez publiczne API jako czarne skrzynki (`provenance.md`).
+
+```sh
+cd tools/compare
+go test -v -run TestRivalsSpec .                                  # zgodność ze specyfikacją
+go test -run xxx -bench BenchmarkRivals -benchtime 2s -count 5 .  # czas, pamięć, rozmiar wyniku
+GOMDGO_DUMP=/jakiś/katalog go test -run TestDumpRivals .          # wyniki HTML do ręcznej analizy
+```
+
+Pomiar z 2026-11-24: `gomdgo` z kodem biblioteki jak w `3acafeb`, `goldmark` v1.8.7, `gomarkdown/markdown`
+v0.0.0-20261123200727-167101872811, `blackfriday` v2.1.0, Go 1.26.6, macOS arm64. Mediana z 5 przebiegów po 2 s;
+obciążenie maszyny 2–4, rozrzut między przebiegami poniżej 3% (jeden wyjątek: `blackfriday` na zestawie large, 13%).
+Trzy przebiegi tego dnia dały te same wnioski.
+
+| Miara | `gomdgo` | `goldmark` | `gomarkdown` | `blackfriday` |
+|---|---:|---:|---:|---:|
+| przykłady CommonMark 0.31.2, bez rozszerzeń | 652 / 652 | 652 / 652 | 353 / 652 | 307 / 652 |
+| przykłady CommonMark 0.31.2, z rozszerzeniami | 642 / 652 | 649 / 652 | 380 / 652 | 332 / 652 |
+| wiersze kodu wkompilowane w program | 3 561 | 12 850 | 10 719 | 7 911 |
+| przyrost binarki | 466 kB | 1 289 kB | 1 161 kB | 847 kB |
+| zależności w `go.mod` | brak | brak | 2 (nie trafiają do programu z samym parserem) | brak |
+| spec: czas | 0,487 ms | 1,310 ms | 1,506 ms | 1,068 ms |
+| spec: pamięć | 1,53 MB | 4,43 MB | 5,31 MB | 5,05 MB |
+| corpus: czas | 0,095 ms | 0,188 ms | 0,151 ms | 0,109 ms |
+| corpus: pamięć | 0,290 MB | 0,272 MB | 0,207 MB | 0,346 MB |
+| large (260 kB): czas | 4,11 ms | 7,59 ms | 5,89 ms | 4,73 ms |
+| large (260 kB): pamięć | 13,05 MB | 10,23 MB | 6,96 MB | 13,50 MB |
+| large (260 kB): rozmiar wyniku | 391 320 B | 401 460 B | 368 519 B | 362 699 B |
+
+Przewaga `gomdgo`, `(inna − gomdgo) / inna × 100%`:
+
+| Zestaw | Miara | wobec `goldmark` | wobec `gomarkdown` | wobec `blackfriday` |
+|---|---|---:|---:|---:|
+| spec | czas | +62,8% | +67,7% | +54,4% |
+| | pamięć | +65,4% | +71,1% | +69,7% |
+| corpus | czas | +49,6% | +37,4% | +13,6% |
+| | pamięć | −6,6% | −39,6% | +16,2% |
+| large | czas | +45,8% | +30,2% | +13,1% |
+| | pamięć | −27,5% | −87,5% | +3,3% |
+| rozmiar | wiersze kodu | +72,3% | +66,8% | +55,0% |
+| | przyrost binarki | +63,8% | +59,9% | +45,0% |
+
+Uwagi do pomiaru:
+
+- wiersze kodu liczymy tu inaczej niż w tabeli rozmiaru wyżej: tylko pliki pakietów, które program „stdin → HTML”
+  faktycznie wciąga (`go list -deps`), stąd 12 850 wierszy `goldmark` zamiast 13 293;
+- wiersz „z rozszerzeniami” mierzy każdą bibliotekę w ustawieniu typu GFM, w którym część przykładów CommonMark
+  celowo daje inny wynik (tabele, autolinki, filtr znaczników);
+- `gomarkdown` i `blackfriday` w próbie z 2026-11-24 przepuszczają domyślnie `<script>` i adres `javascript:`;
+  `gomdgo` zapisuje znacznik jako tekst i usuwa adres, `goldmark` pomija znacznik i usuwa adres;
+- zestaw large w `BenchmarkRivals` to pliki korpusu bez 003 i 004 sklejone 60 razy. `BenchmarkCorpus` (K7) skleja
+  je z plikiem 004 i tego zestawu nie wolno używać do `gomarkdown`: plik 004 zawiera niezamknięte ogrodzenie kodu
+  w cytacie (`> ```), po którym następuje wiersz bez znaku `>`. Według CommonMark blok kodu kończy się razem
+  z cytatem. `gomarkdown` szuka zamknięcia dalej, poza cytatem: gdy w dokumencie jest później jakiekolwiek
+  ogrodzenie, cała treść pomiędzy staje się kodem. W dokumencie sklejonym 50 razy 25 kopii wychodziło jako kod
+  (150 nagłówków `<h1>` zamiast 300, wynik 313 kB zamiast 395 kB), a pomiar pokazywał `gomarkdown` jako
+  szybszy o 20%. Najmniejsze wejście: `> ```⏎abc⏎⏎# Nagłówek⏎⏎> ```⏎⏎koniec` (⏎ to nowy wiersz); `gomdgo`
+  i `goldmark` oddają nagłówek, `gomarkdown` zamienia go w kod;
+- pozostałe różnice rozmiaru wyniku to różnice dialektu: `gomarkdown` i `blackfriday` nie robią pól wyboru
+  w listach zadań, nie zamieniają `www.example.com` na odnośnik i inaczej zagnieżdżają listy.
 
 ## Pakiet dowodów (K9)
 

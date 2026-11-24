@@ -41,7 +41,8 @@ kolumnę „Stan” w `docs/roadmap.md`.
   etap 5 też: punkty rozszerzeń (`extend.go`, ADR 0009), `Document.Walk` (`walk.go`, ADR 0010), bloki uwag
   i przypisy (`extras.go`, ADR 0011); **etap 6 w toku**: K7 zmierzone (`BenchmarkCorpus`), pakiet dowodów
   generuje `tools/evidence`, korpus dokumentów rzeczywistych opisuje `docs/testing.md`; K5 liczymy na kandydacie
-  do wydania (ADR 0012), więc zamknie się po etapie 7 z dokumentami odbiorcy (K8); do tego czasu przebiegi pośrednie;
+  do wydania (ADR 0012): 24 h bez błędu na kodzie biblioteki z `3acafeb` (2026-11-23); każda zmiana plików `*.go`
+  katalogu głównego poza testami zeruje licznik, więc poprawki po dokumentach odbiorcy (K8) zbieraj w paczki;
   API według ADR 0005 (`New(Config).Parse(src).HTML()`), polityka bezpieczeństwa według ADR 0006, rozszerzenia
   według ADR 0007 i 0008 (`gfm.go`): GFM domyślnie włączone, `Config.Disable` wyłącza;
 - układ kodu: `block.go` (faza 1, wiersz po wierszu), `inline.go` (faza 2, stos ograniczników i stos nawiasów),
@@ -49,7 +50,10 @@ kolumnę „Stan” w `docs/roadmap.md`.
   w przód, które może zawieść, musi zapamiętać niepowodzenie, a każdy nowy przypadek złośliwy trafia do
   `TestPathological`;
 - `cmd/gomdgo` to proste polecenie Markdown → HTML (ADR 0014): flagi odpowiadają polom `Config`, nie uruchamia
-  innych programów; łączenie z `gomermaidgo` i `gopdfgo` należy do osobnego, czwartego projektu;
+  innych programów; kod poleceń jest w `internal/cli`; `cmd/gomdgo-mermaid` to osobny moduł, który dokłada
+  diagramy `gomermaidgo` przez `Config.CodeBlocks` (ADR 0015; testy puszczaj w jego katalogu); łączenie z `gomermaidgo` i `gopdfgo` należy do czwartego projektu, `../gopressgo`
+  (założony 2026-11-23). Jest pierwszym odbiorcą `gomdgo`: od niego przyjdą pliki wzorcowe do K8, a uwagi
+  przekazane z tej strony leżą w `../gopressgo/docs/notes-from-gomdgo.md`;
 - miara postępu: `go test -v -run TestSpec .`; listy zaliczonych przykładów `testdata/spec/passing-*.txt` przepisuje
   `go test -update .` (opis w `docs/testing.md`); porównanie z odniesieniem: `tools/compare`;
 - pytań otwartych nie ma (`docs/adr/open-questions.md`; wybory robocze potwierdzone 2026-11-22); licencja to Apache 2.0 (ADR 0013), a porównanie z `goldmark` w `README.md` trzeba

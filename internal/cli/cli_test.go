@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"bytes"
@@ -34,7 +34,7 @@ func TestRun(t *testing.T) {
 	}
 	for _, c := range cases {
 		var out, errOut bytes.Buffer
-		if code := run(c.args, strings.NewReader(src), &out, &errOut); code != 0 {
+		if code := Run(c.args, strings.NewReader(src), &out, &errOut, Options{}); code != 0 {
 			t.Errorf("%s: exit code %d, stderr %q", c.name, code, errOut.String())
 			continue
 		}
@@ -58,7 +58,7 @@ func TestRunFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 	var stdout, stderr bytes.Buffer
-	if code := run([]string{"-o", out, in}, strings.NewReader("ignored"), &stdout, &stderr); code != 0 {
+	if code := Run([]string{"-o", out, in}, strings.NewReader("ignored"), &stdout, &stderr, Options{}); code != 0 {
 		t.Fatalf("exit code %d, stderr %q", code, stderr.String())
 	}
 	got, err := os.ReadFile(out)
@@ -85,7 +85,7 @@ func TestRunErrors(t *testing.T) {
 	}
 	for _, c := range cases {
 		var out, errOut bytes.Buffer
-		code := run(c.args, strings.NewReader(""), &out, &errOut)
+		code := Run(c.args, strings.NewReader(""), &out, &errOut, Options{})
 		if code != c.code || !strings.Contains(errOut.String(), c.msg) || out.Len() != 0 {
 			t.Errorf("%s: code %d, stdout %q, stderr %q", c.name, code, out.String(), errOut.String())
 		}
