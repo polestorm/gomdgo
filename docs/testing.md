@@ -126,12 +126,12 @@ po normalizacji.
 | 2026-11-21 | `cc7051d` (etap 0) | 80 / 652 | 1 / 24 | 88 / 676 (13,0%), `goldmark` v1.8.7 | zaślepka `Render` bez parsera: wynik przypadkowy, poziom zerowy miary; fuzzing 20 s (2,9 mln wywołań) bez błędu |
 | 2026-11-21 | `41b1f76` (etap 1) | 343 / 652 | 2 / 24 | 345 / 676 (51,0%) na przykładach specyfikacji; korpus własny 4 / 4; `goldmark` v1.8.7 | struktura bloków bez treści w wierszu; rozdziały Tabs, Precedence, Indented code blocks, Blank lines, Block quotes, List items i Lists zaliczone w całości (124 / 124), w pozostałych rozdziałach blokowych brakuje tylko przykładów wymagających treści w wierszu; fuzzing łącznie 125 s bez błędu |
 | 2026-11-21 | `a38663e` (etap 2) | **652 / 652** | 2 / 24 | 654 / 676 (96,7%) na przykładach specyfikacji, w tym CommonMark 652 / 652; korpus własny 6 / 6; `goldmark` v1.8.7 | treść w wierszu; K1 spełnione przy porównaniu co do bajta; brakujące 22 przykłady to rozszerzenia GFM (etap 4); fuzzing łącznie 215 s (ok. 5 mln wywołań w ostatnim przebiegu) bez błędu |
-| 2026-11-21 | `29b7f7d` (etap 3) | 652 / 652 | 2 / 24 | tryb zwykły: 654 / 676 (96,7%), CommonMark 652 / 652, korpus 6 / 6; tryb `-safe`: CommonMark 648 / 652 (99,4%), korpus 6 / 6; `goldmark` v1.8.7 | API z ADR 0005, polityka surowego HTML, lista schematów, identyfikatory nagłówków, niepoprawny UTF-8 (ADR 0004); 4 różnice trybu bezpiecznego to wpis 1 w `differences.md`; fuzzing łącznie 315 s, od tego etapu ze sprawdzianem bezpieczeństwa (7 mln wywołań w ostatnim przebiegu), bez błędu |
-| 2026-11-21 | `6189ebb` (etap 4) | 652 / 652 | **24 / 24** | tryb zwykły, 683 wejścia (676 przykładów + 7 plików korpusu): 681 (99,7%) z `-refalign=attribute`; 681 (99,7%) z `-refalign=style`, czyli odniesienie domyślne wobec `gomdgo` z opcjami zgodności (bez nich 680); tryb `-safe`: 677 (99,1%); `goldmark` v1.8.7 | lista schematów z `tel`; rozszerzenia GFM (domyślnie włączone, `Config.Disable` je wyłącza), opcje zgodności i limit dopełniania tabel (ADR 0007, 0008); CommonMark mierzony z `Disable: GFM`; K2 spełnione przy porównaniu co do bajta; wszystkie różnice opisane w `differences.md` (wiersze 1–8); `TestPathological` ma 80 przypadków; fuzzing łącznie 465 s, bez błędu |
-| 2026-11-21 | `6ebd995` (etap 5) | 652 / 652 | 24 / 24 | bez zmian: 681 / 683 (99,7%); tryb `-safe` 677 / 683 | punkty rozszerzeń (ADR 0009), publiczne drzewo `Document.Walk` (ADR 0010), bloki uwag i przypisy (ADR 0011); żadne z nich nie zmienia wyniku przy ustawieniach domyślnych; `TestPathological` ma 92 przypadki; fuzzing łącznie 615 s, także z punktami rozszerzeń, blokami uwag i przypisami, bez błędu |
-| 2026-11-21 | `3acafeb` (etap 6, część 1) | 652 / 652 | 24 / 24 | przykłady specyfikacji i korpus własny: 681 / 683 (99,7%), tryb `-safe` 677 / 683; dokumenty rzeczywiste: 122 / 123 (99,2%), tryb `-safe` 123 / 123 | K7 zmierzone: stosunek czasu 0,42–0,72 wobec `goldmark` (sekcja „Wydajność”); K9: generator pakietu dowodów; komórki dopełnione bez wyrównania (ADR 0007); fuzzing: przebiegi 30 min (125,9 mln wywołań) i 60 min (127,1 mln wywołań, 2026-11-22) na 4 rdzeniach oraz 8 h (3366,9 mln wywołań, 2026-11-22, osobna sesja), bez błędu; łącznie 34 815 s (9 h 40 min), pomiar pośredni (ADR 0012) |
-| 2026-11-23 | `6298d40` (kod biblioteki jak w `3acafeb`) | 652 / 652 | 24 / 24 | bez zmian: 681 / 683 (99,7%); dokumenty rzeczywiste 122 / 123 | **fuzzing do K5 (ADR 0012): 24 h 0 min bez błędu**, 1336,8 mln wywołań, 4860 wejść w korpusie; `FuzzRender` z binarki skompilowanej krzyżowo (linux/amd64), Synology DS224+ (Intel J4125), 3 procesy robocze, start 2026-11-22 11:44, koniec 2026-11-23 11:44; odczyt wyniku 2026-11-24; K5 spełnione dla tego kodu biblioteki, każda jego zmiana zeruje licznik |
-| 2026-11-24 | `a64a117` (zmniejszenie pamięci) | 652 / 652 | 24 / 24 | bez zmian: 681 / 683 (99,7%) | węzeł drzewa 288 → 128 bajtów dla treści w wierszu, rezerwacja bufora wyniku: pamięć na dokumencie 260 kB 13,05 → 8,05 MB, czas 4,11 → 3,34 ms; wynik identyczny co do bajta z poprzednią wersją na 4048 plikach; zmiana kodu biblioteki, więc licznik K5 od nowa: fuzzing lokalny 90 s (13,4 mln wywołań) bez błędu, przebieg 24 h na Synology DS224+ rozpoczęty 2026-11-24 19:53 (wynik do dopisania) |
+| 2026-11-21 | `1b16621` (etap 3) | 652 / 652 | 2 / 24 | tryb zwykły: 654 / 676 (96,7%), CommonMark 652 / 652, korpus 6 / 6; tryb `-safe`: CommonMark 648 / 652 (99,4%), korpus 6 / 6; `goldmark` v1.8.7 | API z ADR 0005, polityka surowego HTML, lista schematów, identyfikatory nagłówków, niepoprawny UTF-8 (ADR 0004); 4 różnice trybu bezpiecznego to wpis 1 w `differences.md`; fuzzing łącznie 315 s, od tego etapu ze sprawdzianem bezpieczeństwa (7 mln wywołań w ostatnim przebiegu), bez błędu |
+| 2026-11-21 | `a5bff37` (etap 4) | 652 / 652 | **24 / 24** | tryb zwykły, 683 wejścia (676 przykładów + 7 plików korpusu): 681 (99,7%) z `-refalign=attribute`; 681 (99,7%) z `-refalign=style`, czyli odniesienie domyślne wobec `gomdgo` z opcjami zgodności (bez nich 680); tryb `-safe`: 677 (99,1%); `goldmark` v1.8.7 | lista schematów z `tel`; rozszerzenia GFM (domyślnie włączone, `Config.Disable` je wyłącza), opcje zgodności i limit dopełniania tabel (ADR 0007, 0008); CommonMark mierzony z `Disable: GFM`; K2 spełnione przy porównaniu co do bajta; wszystkie różnice opisane w `differences.md` (wiersze 1–8); `TestPathological` ma 80 przypadków; fuzzing łącznie 465 s, bez błędu |
+| 2026-11-21 | `33252be` (etap 5) | 652 / 652 | 24 / 24 | bez zmian: 681 / 683 (99,7%); tryb `-safe` 677 / 683 | punkty rozszerzeń (ADR 0009), publiczne drzewo `Document.Walk` (ADR 0010), bloki uwag i przypisy (ADR 0011); żadne z nich nie zmienia wyniku przy ustawieniach domyślnych; `TestPathological` ma 92 przypadki; fuzzing łącznie 615 s, także z punktami rozszerzeń, blokami uwag i przypisami, bez błędu |
+| 2026-11-21 | `6975fcd` (etap 6, część 1) | 652 / 652 | 24 / 24 | przykłady specyfikacji i korpus własny: 681 / 683 (99,7%), tryb `-safe` 677 / 683; dokumenty rzeczywiste: 122 / 123 (99,2%), tryb `-safe` 123 / 123 | K7 zmierzone: stosunek czasu 0,42–0,72 wobec `goldmark` (sekcja „Wydajność”); K9: generator pakietu dowodów; komórki dopełnione bez wyrównania (ADR 0007); fuzzing: przebiegi 30 min (125,9 mln wywołań) i 60 min (127,1 mln wywołań, 2026-11-22) na 4 rdzeniach oraz 8 h (3366,9 mln wywołań, 2026-11-22, osobna sesja), bez błędu; łącznie 34 815 s (9 h 40 min), pomiar pośredni (ADR 0012) |
+| 2026-11-23 | `56832f3` (kod biblioteki jak w `6975fcd`) | 652 / 652 | 24 / 24 | bez zmian: 681 / 683 (99,7%); dokumenty rzeczywiste 122 / 123 | **fuzzing do K5 (ADR 0012): 24 h 0 min bez błędu**, 1336,8 mln wywołań, 4860 wejść w korpusie; `FuzzRender` z binarki skompilowanej krzyżowo (linux/amd64), Synology DS224+ (Intel J4125), 3 procesy robocze, start 2026-11-22 11:44, koniec 2026-11-23 11:44; odczyt wyniku 2026-11-24; K5 spełnione dla tego kodu biblioteki, każda jego zmiana zeruje licznik |
+| 2026-11-24 | `eacbe2f` (zmniejszenie pamięci) | 652 / 652 | 24 / 24 | bez zmian: 681 / 683 (99,7%) | węzeł drzewa 288 → 128 bajtów dla treści w wierszu, rezerwacja bufora wyniku: pamięć na dokumencie 260 kB 13,05 → 8,05 MB, czas 4,11 → 3,34 ms; wynik identyczny co do bajta z poprzednią wersją na 4048 plikach; zmiana kodu biblioteki, więc licznik K5 od nowa: fuzzing lokalny 90 s (13,4 mln wywołań) bez błędu, przebieg 24 h na Synology DS224+ rozpoczęty 2026-11-24 19:53 (wynik do dopisania) |
 
 Pomiar samego odniesienia, 2026-11-21, `goldmark` v1.8.7, po normalizacji: CommonMark 652 / 652; rozszerzenia GFM
 22 / 24. Dwa odstępstwa od specyfikacji GFM są zapisane w `differences.md` jako zapowiedziane różnice.
@@ -169,7 +169,7 @@ Oba parsery mają ustawienia z porównania różnicowego. Wynik podajemy jako **
 rozmiar wyniku, rozmiar kodu). Wartość dodatnia oznacza, że `gomdgo` wypada lepiej, ujemna, że gorzej. Tak samo
 zapisujemy porównania w `README.md`.
 
-Pomiar z 2026-11-24, kod biblioteki po zmniejszeniu węzła drzewa (commit `a64a117`), Apple M-series
+Pomiar z 2026-11-24, kod biblioteki po zmniejszeniu węzła drzewa (commit `eacbe2f`), Apple M-series
 (10 rdzeni), Go 1.26.6, `goldmark` v1.8.7, `-benchtime 2s -count 5`, mediana, średnie obciążenie maszyny 3–4,
 rozrzut między przebiegami poniżej 3%:
 
@@ -191,7 +191,7 @@ rozrzut między przebiegami poniżej 3%:
 K7 wymaga czasu najwyżej 2× `goldmark`, czyli przewagi nie mniejszej niż −100%; we wszystkich zestawach przewaga
 jest dodatnia. Zestawu extra (123 dokumenty rzeczywiste) po tej zmianie nie mierzyliśmy.
 
-Pomiar poprzedni, 2026-11-22, kod biblioteki jak w `3acafeb` (węzeł drzewa 288 bajtów): czas 0,52 / 0,091 /
+Pomiar poprzedni, 2026-11-22, kod biblioteki jak w `6975fcd` (węzeł drzewa 288 bajtów): czas 0,52 / 0,091 /
 4,98 ms (przewaga +58,0%, +49,6%, +40,9%), pamięć 1,53 / 0,290 / 13,45 MB (przewaga +65,4%, −9,2%, −27,9%);
 zestaw extra: czas 9,36 ms wobec 15,91 ms (+41,2%), pamięć 21,58 MB wobec 18,58 MB (−16,1%), alokacje 78 223
 wobec 101 696 (+23,1%), rozmiar wyniku 1 202 562 B wobec 1 204 674 B (+0,2%).
@@ -236,7 +236,7 @@ go test -run xxx -bench BenchmarkRivals -benchtime 2s -count 5 .  # czas, pamię
 GOMDGO_DUMP=/jakiś/katalog go test -run TestDumpRivals .          # wyniki HTML do ręcznej analizy
 ```
 
-Pomiar z 2026-11-24: `gomdgo` po zmniejszeniu węzła drzewa (commit `a64a117`), `goldmark` v1.8.7,
+Pomiar z 2026-11-24: `gomdgo` po zmniejszeniu węzła drzewa (commit `eacbe2f`), `goldmark` v1.8.7,
 `gomarkdown/markdown` v0.0.0-20261123200727-167101872811, `blackfriday` v2.1.0, Go 1.26.6, macOS arm64. Mediana
 z 5 przebiegów po 2 s; obciążenie maszyny 2–4, rozrzut między przebiegami poniżej 2%. Przebieg przy obciążeniu
 7–9 dał rozrzut do 40% i został odrzucony.
@@ -269,7 +269,7 @@ Przewaga `gomdgo`, `(inna − gomdgo) / inna × 100%`:
 | rozmiar | wiersze kodu | +72,1% | +66,5% | +54,7% |
 | | przyrost binarki | +63,8% | +59,9% | +45,0% |
 
-Przed zmniejszeniem węzła (ten sam dzień, kod jak w `3acafeb`) `gomdgo` miał na tych zestawach: czas 0,487 /
+Przed zmniejszeniem węzła (ten sam dzień, kod jak w `6975fcd`) `gomdgo` miał na tych zestawach: czas 0,487 /
 0,095 / 4,11 ms, pamięć 1,53 / 0,290 / 13,05 MB; przewaga pamięci na zestawie large wynosiła wtedy −27,5%
 wobec `goldmark` i −87,5% wobec `gomarkdown`.
 

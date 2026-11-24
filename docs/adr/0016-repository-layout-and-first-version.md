@@ -18,8 +18,9 @@ w podkatalogu (`gomermaidgo/mermaid`, `gopdfgo/htmlpdf`); oba mają wersję v0.1
 4. Dane testowe (`testdata/`) i wymagania (`requirements/`) zostają w katalogu głównym; testy pakietu czytają je
    przez `../`.
 5. Skompilowane programy nie trafiają do repozytorium. Plik `tools/compare/compare` (4,5 MB, dodany omyłkowo
-   w commicie `29b7f7d`) został usunięty z drzewa; zostaje w historii, dopóki właściciel nie zdecyduje o jej
-   przepisaniu.
+   na etapie 3) został usunięty z drzewa i, poleceniem właściciela z 2026-11-24, z całej historii
+   (`git filter-repo`). Zmieniło to identyfikatory dziesięciu commitów; identyfikatory w dokumentach są już nowe,
+   a znacznik v0.1.0 wskazuje commit po przepisaniu. Treść plików w każdym commicie pozostała bez zmian.
 6. Pierwsza wersja to v0.1.0. Oznacza stan „funkcje gotowe, utwardzanie w toku”: kryteria K5 (24 h fuzzingu
    na tym kodzie) i K8 (pliki wzorcowe odbiorcy) nie są jeszcze spełnione, więc wersja 0.x nie obiecuje
    stałości API.
@@ -32,7 +33,7 @@ Przeszukane pliki śledzone i opisy commitów: adresy IP, nazwy hostów i użytk
 adresy e-mail, hasła, klucze, żetony. W plikach tekstowych nic takiego nie ma; adresy e-mail w testach są
 w domenie `example.com`. Znalezione:
 
-- `tools/compare/compare`: binarka z wbudowanymi ścieżkami katalogu domowego autora (punkt 5);
+- `tools/compare/compare`: binarka z wbudowanymi ścieżkami katalogu domowego autora, usunięta z historii (punkt 5);
 - opisy commitów zawierają adres e-mail autora i odnośniki do sesji Claude Code, tak jak w opublikowanych już
   `gomermaidgo` i `gopdfgo`;
 - `docs/testing.md` podaje model serwera, na którym biegnie fuzzing, bez adresu i nazwy użytkownika.
@@ -40,6 +41,6 @@ w domenie `example.com`. Znalezione:
 ## Konsekwencje
 
 + katalog główny jest czytelny, układ zgodny z rodziną;
-− zmienia się ścieżka importu: odbiorcy przypięci do starszego commita (`gopressgo` na `6298d40`) muszą przy
+− zmienia się ścieżka importu: odbiorcy przypięci do starszego commita (`gopressgo`, przypięty do commita sprzed przepisania historii) muszą przy
   podbiciu wersji zmienić import z `github.com/polestorm/gomdgo` na `github.com/polestorm/gomdgo/markdown`;
 − dokumenty sprzed 2026-11-24 podają nazwy plików bez katalogu `markdown/`.
