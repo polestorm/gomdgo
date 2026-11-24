@@ -21,6 +21,8 @@ w podkatalogu (`gomermaidgo/mermaid`, `gopdfgo/htmlpdf`); oba mają wersję v0.1
    na etapie 3) został usunięty z drzewa i, poleceniem właściciela z 2026-11-24, z całej historii
    (`git filter-repo`). Zmieniło to identyfikatory dziesięciu commitów; identyfikatory w dokumentach są już nowe,
    a znacznik v0.1.0 wskazuje commit po przepisaniu. Treść plików w każdym commicie pozostała bez zmian.
+   Tego samego dnia przepisane zostały opisy wszystkich commitów: linie `Co-Authored-By` i `Claude-Session`
+   zastąpiła jedna, `Made with the help of Claude Code`; identyfikatory commitów zmieniły się po raz drugi.
 6. Pierwsza wersja to v0.1.0. Oznacza stan „funkcje gotowe, utwardzanie w toku”: kryteria K5 (24 h fuzzingu
    na tym kodzie) i K8 (pliki wzorcowe odbiorcy) nie są jeszcze spełnione, więc wersja 0.x nie obiecuje
    stałości API.
