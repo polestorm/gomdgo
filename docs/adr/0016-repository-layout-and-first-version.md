@@ -26,6 +26,9 @@ w podkatalogu (`gomermaidgo/mermaid`, `gopdfgo/htmlpdf`); oba mają wersję v0.1
    stałości API.
 7. Przeniesienie plików nie zmienia treści kodu biblioteki poza nazwą pakietu, więc nie zeruje licznika K5
    (ADR 0012).
+8. Najniższa obsługiwana wersja Go to 1.22, tak jak w `gomermaidgo`: wszystkie trzy pliki `go.mod` mają
+   `go 1.22`. Sprawdzone 2026-11-24 toolchainem 1.22.12 (`go vet` i `go test` w trzech modułach); Go 1.21 nie
+   było sprawdzane. CI (`.github/workflows/test.yml`) powtarza to na Go 1.22 i bieżącym, na Linuksie i macOS.
 
 ## Przegląd przed publikacją (2026-11-24)
 

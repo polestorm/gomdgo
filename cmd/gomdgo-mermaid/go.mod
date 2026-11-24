@@ -1,6 +1,6 @@
 module github.com/polestorm/gomdgo/cmd/gomdgo-mermaid
 
-go 1.26.0
+go 1.22
 
 require github.com/polestorm/gomdgo v0.0.0
 
