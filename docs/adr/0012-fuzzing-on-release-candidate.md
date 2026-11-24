@@ -12,7 +12,8 @@ robocze z pytania 8 (potwierdzone bez zmian 2026-11-22) i poprawki błędów zna
 ## Decyzja
 
 1. K5 jest spełnione, gdy `FuzzRender` przebiegł co najmniej 24 h bez błędu na **kandydacie do wydania**, czyli
-   na commicie, którego kod biblioteki (pliki `*.go` katalogu głównego poza testami) jest tym, który idzie do
+   na commicie, którego kod biblioteki (pliki `*.go` pakietu biblioteki poza testami; do 2026-11-24 w katalogu głównym, potem w `markdown/`,
+   ADR 0016; samo przeniesienie plików i zmiana nazwy pakietu bez zmiany treści nie zeruje licznika) jest tym, który idzie do
    odbiorcy. Czas z kilku przebiegów na tym samym kodzie biblioteki sumuje się.
 2. Każda zmiana kodu biblioteki po rozpoczęciu liczenia zeruje licznik K5. Zmiany w dokumentach, testach
    i narzędziach go nie zerują.

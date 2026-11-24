@@ -1,4 +1,4 @@
-package gomdgo
+package markdown
 
 import (
 	"os"
@@ -21,7 +21,7 @@ func TestRequirementsCovered(t *testing.T) {
 		return string(b)
 	}
 	defined := map[string]bool{}
-	docs, _ := filepath.Glob("requirements/*.md")
+	docs, _ := filepath.Glob("../requirements/*.md")
 	for _, doc := range docs {
 		for _, line := range strings.Split(read(doc), "\n") {
 			if id := reqRef.FindString(line); id != "" && strings.HasPrefix(line, "| "+id) {
@@ -35,11 +35,11 @@ func TestRequirementsCovered(t *testing.T) {
 	if len(defined) == 0 {
 		t.Fatal("no requirements found")
 	}
-	corpus, _ := filepath.Glob("testdata/corpus/*.md")
-	extras, _ := filepath.Glob("testdata/corpus-extras/*.md")
+	corpus, _ := filepath.Glob("../testdata/corpus/*.md")
+	extras, _ := filepath.Glob("../testdata/corpus-extras/*.md")
 	corpus = append(corpus, extras...)
 	sources := append([]string{}, corpus...)
-	for _, pattern := range []string{"*_test.go", "internal/*/*_test.go"} {
+	for _, pattern := range []string{"*_test.go", "../internal/*/*_test.go"} {
 		m, _ := filepath.Glob(pattern)
 		sources = append(sources, m...)
 	}

@@ -1,4 +1,4 @@
-package gomdgo
+package markdown
 
 // Publiczny widok drzewa dokumentu dla walidatorów (ADR 0010). Drzewo jest tylko do odczytu: Node to mały
 // uchwyt z metodami, a wewnętrzna struktura węzłów pozostaje prywatna.

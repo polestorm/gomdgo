@@ -1,4 +1,4 @@
-package gomdgo
+package markdown
 
 import (
 	"fmt"
@@ -273,8 +273,8 @@ var extrasConverter = New(Config{Enable: Alerts | Footnotes, AlertTitles: map[st
 
 // TestCorpus porównuje wynik dla plików korpusu własnego z plikami wzorcowymi; go test -update je przepisuje.
 func TestCorpus(t *testing.T) {
-	files, _ := filepath.Glob("testdata/corpus/*.md")
-	extras, _ := filepath.Glob("testdata/corpus-extras/*.md")
+	files, _ := filepath.Glob("../testdata/corpus/*.md")
+	extras, _ := filepath.Glob("../testdata/corpus-extras/*.md")
 	if len(files) == 0 || len(extras) == 0 {
 		t.Fatal("no corpus files")
 	}

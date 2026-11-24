@@ -1,4 +1,4 @@
-// Package cli zawiera wspólną część poleceń wiersza poleceń: flagi odpowiadające polom gomdgo.Config, odczyt
+// Package cli zawiera wspólną część poleceń wiersza poleceń: flagi odpowiadające polom markdown.Config, odczyt
 // wejścia i zapis wyniku. Polecenie cmd/gomdgo woła Run bez rozszerzeń; polecenie łączące gomdgo z inną
 // biblioteką (cmd/gomdgo-mermaid, osobny moduł) przekazuje w Options funkcje dla bloków kodu
 // (docs/adr/0014-command-line.md, docs/adr/0015-combined-binary.md).
@@ -12,14 +12,14 @@ import (
 	"os"
 	"strings"
 
-	"github.com/polestorm/gomdgo"
+	"github.com/polestorm/gomdgo/markdown"
 )
 
 // Options opisuje, czym polecenie różni się od zwykłego gomdgo.
 type Options struct {
-	Name       string                          // nazwa polecenia w komunikatach; pusta oznacza "gomdgo"
-	CodeBlocks map[string]gomdgo.CodeBlockFunc // funkcje dla bloków kodu według języka (Config.CodeBlocks)
-	Head       string                          // HTML dopisywany do <head> przy -standalone, np. arkusz stylów
+	Name       string                            // nazwa polecenia w komunikatach; pusta oznacza "gomdgo"
+	CodeBlocks map[string]markdown.CodeBlockFunc // funkcje dla bloków kodu według języka (Config.CodeBlocks)
+	Head       string                            // HTML dopisywany do <head> przy -standalone, np. arkusz stylów
 }
 
 // Run wykonuje polecenie i zwraca kod wyjścia: 0 przy powodzeniu, 1 przy błędzie odczytu lub zapisu,
@@ -64,7 +64,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer, opts Options)
 		return fail(2, "expected at most one input file, got %d", fs.NArg())
 	}
 
-	cfg := gomdgo.Config{
+	cfg := markdown.Config{
 		AnyScheme:       *anyScheme,
 		HeadingIDs:      *headingIDs,
 		SingleTilde:     *tilde,
@@ -73,11 +73,11 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer, opts Options)
 	}
 	switch *rawHTML {
 	case "escape":
-		cfg.RawHTML = gomdgo.RawHTMLEscape
+		cfg.RawHTML = markdown.RawHTMLEscape
 	case "omit":
-		cfg.RawHTML = gomdgo.RawHTMLOmit
+		cfg.RawHTML = markdown.RawHTMLOmit
 	case "pass":
-		cfg.RawHTML = gomdgo.RawHTMLPass
+		cfg.RawHTML = markdown.RawHTMLPass
 	default:
 		return fail(2, "unknown -raw-html policy %q (escape, omit, pass)", *rawHTML)
 	}
@@ -93,13 +93,13 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer, opts Options)
 		}
 	}
 	if *commonMark {
-		cfg.Disable = gomdgo.GFM
+		cfg.Disable = markdown.GFM
 	}
 	if *alerts {
-		cfg.Enable |= gomdgo.Alerts
+		cfg.Enable |= markdown.Alerts
 	}
 	if *footnotes {
-		cfg.Enable |= gomdgo.Footnotes
+		cfg.Enable |= markdown.Footnotes
 	}
 
 	var src []byte
@@ -113,7 +113,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer, opts Options)
 		return fail(1, "%v", err)
 	}
 
-	body, err := gomdgo.New(cfg).Render(src)
+	body, err := markdown.New(cfg).Render(src)
 	if err != nil {
 		return fail(1, "%v", err)
 	}

@@ -49,8 +49,8 @@ rozszerzeń GFM.
 - przykład, który zaczął przechodzić, a nie ma go na liście, też psuje test, żeby lista nie zostawała w tyle.
 
 ```sh
-go test -update .          # przepisuje obie listy; różnicę ogląda się w git diff
-go test -v -run TestSpec . # liczby zaliczonych na rozdział
+go test -update ./markdown          # przepisuje obie listy; różnicę ogląda się w git diff
+go test -v -run TestSpec ./markdown # liczby zaliczonych na rozdział
 ```
 
 Usunięcie numeru z listy wymaga wpisu w opisie commita, dlaczego.
@@ -58,7 +58,7 @@ Usunięcie numeru z listy wymaga wpisu w opisie commita, dlaczego.
 ## Fuzzing
 
 ```sh
-go test -run xxx -fuzz FuzzRender -fuzztime 10m .
+go test -run xxx -fuzz FuzzRender -fuzztime 10m ./markdown
 ```
 
 Czas fuzzingu zapisujemy w tabeli pomiarów. Do kryterium K5 liczy się 24 h na kandydacie do wydania; każda zmiana
@@ -69,11 +69,15 @@ Długi przebieg poza maszyną roboczą (Linux x86-64, bez instalowania Go): budu
 z katalogiem `testdata/` i uruchamiamy z katalogu, w którym leży `testdata/`:
 
 ```sh
-GOOS=linux GOARCH=amd64 go test -c -fuzz FuzzRender -o gomdgo.test .
+GOOS=linux GOARCH=amd64 go test -c -fuzz FuzzRender -o gomdgo.test ./markdown
 # na maszynie docelowej; katalog pamięci podręcznej musi być podany jawnie
 nohup nice -n 10 ./gomdgo.test -test.run xxx -test.fuzz FuzzRender -test.fuzztime 24h -test.parallel 3 \
   -test.fuzzcachedir "$PWD/cache" > fuzz.log 2>&1 < /dev/null &
 ```
+
+Od 2026-11-24 pakiet biblioteki leży w `markdown/`, a testy czytają dane z `../testdata/`. Binarkę uruchamia
+się więc na maszynie zdalnej w podkatalogu (np. `~/gomdgo-fuzz/markdown/`), obok którego leży skopiowany
+katalog `testdata/`. Przebiegi rozpoczęte przed tą datą miały `testdata/` w katalogu roboczym.
 
 Wynik to ostatnie wiersze `fuzz.log` (`PASS` albo opis błędu); wejście, które wywołało błąd, binarka zapisuje
 w `testdata/fuzz/FuzzRender/` obok siebie i trzeba je przenieść do repozytorium.
@@ -113,7 +117,7 @@ Polityki domyślnej `gomdgo` (`RawHTMLEscape`) nie da się porównać z `goldmar
 
 ## Pomiary
 
-Wyniki zapisujemy tutaj z datą, wersją i sposobem pomiaru. CommonMark i GFM: `go test -v -run TestSpec .`,
+Wyniki zapisujemy tutaj z datą, wersją i sposobem pomiaru. CommonMark i GFM: `go test -v -run TestSpec ./markdown`,
 porównanie co do bajta. Zgodność z `goldmark`: `tools/compare` na przykładach obu specyfikacji (676 wejść),
 po normalizacji.
 
@@ -127,7 +131,7 @@ po normalizacji.
 | 2026-11-21 | `6ebd995` (etap 5) | 652 / 652 | 24 / 24 | bez zmian: 681 / 683 (99,7%); tryb `-safe` 677 / 683 | punkty rozszerzeń (ADR 0009), publiczne drzewo `Document.Walk` (ADR 0010), bloki uwag i przypisy (ADR 0011); żadne z nich nie zmienia wyniku przy ustawieniach domyślnych; `TestPathological` ma 92 przypadki; fuzzing łącznie 615 s, także z punktami rozszerzeń, blokami uwag i przypisami, bez błędu |
 | 2026-11-21 | `3acafeb` (etap 6, część 1) | 652 / 652 | 24 / 24 | przykłady specyfikacji i korpus własny: 681 / 683 (99,7%), tryb `-safe` 677 / 683; dokumenty rzeczywiste: 122 / 123 (99,2%), tryb `-safe` 123 / 123 | K7 zmierzone: stosunek czasu 0,42–0,72 wobec `goldmark` (sekcja „Wydajność”); K9: generator pakietu dowodów; komórki dopełnione bez wyrównania (ADR 0007); fuzzing: przebiegi 30 min (125,9 mln wywołań) i 60 min (127,1 mln wywołań, 2026-11-22) na 4 rdzeniach oraz 8 h (3366,9 mln wywołań, 2026-11-22, osobna sesja), bez błędu; łącznie 34 815 s (9 h 40 min), pomiar pośredni (ADR 0012) |
 | 2026-11-23 | `6298d40` (kod biblioteki jak w `3acafeb`) | 652 / 652 | 24 / 24 | bez zmian: 681 / 683 (99,7%); dokumenty rzeczywiste 122 / 123 | **fuzzing do K5 (ADR 0012): 24 h 0 min bez błędu**, 1336,8 mln wywołań, 4860 wejść w korpusie; `FuzzRender` z binarki skompilowanej krzyżowo (linux/amd64), Synology DS224+ (Intel J4125), 3 procesy robocze, start 2026-11-22 11:44, koniec 2026-11-23 11:44; odczyt wyniku 2026-11-24; K5 spełnione dla tego kodu biblioteki, każda jego zmiana zeruje licznik |
-| 2026-11-24 | następny po `0845993` (zmniejszenie pamięci) | 652 / 652 | 24 / 24 | bez zmian: 681 / 683 (99,7%) | węzeł drzewa 288 → 128 bajtów dla treści w wierszu, rezerwacja bufora wyniku: pamięć na dokumencie 260 kB 13,05 → 8,05 MB, czas 4,11 → 3,34 ms; wynik identyczny co do bajta z poprzednią wersją na 4048 plikach; zmiana kodu biblioteki, więc licznik K5 od nowa: fuzzing lokalny 90 s (13,4 mln wywołań) bez błędu, przebieg 24 h na Synology DS224+ rozpoczęty 2026-11-24 19:53 (wynik do dopisania) |
+| 2026-11-24 | `a64a117` (zmniejszenie pamięci) | 652 / 652 | 24 / 24 | bez zmian: 681 / 683 (99,7%) | węzeł drzewa 288 → 128 bajtów dla treści w wierszu, rezerwacja bufora wyniku: pamięć na dokumencie 260 kB 13,05 → 8,05 MB, czas 4,11 → 3,34 ms; wynik identyczny co do bajta z poprzednią wersją na 4048 plikach; zmiana kodu biblioteki, więc licznik K5 od nowa: fuzzing lokalny 90 s (13,4 mln wywołań) bez błędu, przebieg 24 h na Synology DS224+ rozpoczęty 2026-11-24 19:53 (wynik do dopisania) |
 
 Pomiar samego odniesienia, 2026-11-21, `goldmark` v1.8.7, po normalizacji: CommonMark 652 / 652; rozszerzenia GFM
 22 / 24. Dwa odstępstwa od specyfikacji GFM są zapisane w `differences.md` jako zapowiedziane różnice.
@@ -165,7 +169,7 @@ Oba parsery mają ustawienia z porównania różnicowego. Wynik podajemy jako **
 rozmiar wyniku, rozmiar kodu). Wartość dodatnia oznacza, że `gomdgo` wypada lepiej, ujemna, że gorzej. Tak samo
 zapisujemy porównania w `README.md`.
 
-Pomiar z 2026-11-24, kod biblioteki po zmniejszeniu węzła drzewa (commit następny po `0845993`), Apple M-series
+Pomiar z 2026-11-24, kod biblioteki po zmniejszeniu węzła drzewa (commit `a64a117`), Apple M-series
 (10 rdzeni), Go 1.26.6, `goldmark` v1.8.7, `-benchtime 2s -count 5`, mediana, średnie obciążenie maszyny 3–4,
 rozrzut między przebiegami poniżej 3%:
 
@@ -232,7 +236,7 @@ go test -run xxx -bench BenchmarkRivals -benchtime 2s -count 5 .  # czas, pamię
 GOMDGO_DUMP=/jakiś/katalog go test -run TestDumpRivals .          # wyniki HTML do ręcznej analizy
 ```
 
-Pomiar z 2026-11-24: `gomdgo` po zmniejszeniu węzła drzewa (commit następny po `0845993`), `goldmark` v1.8.7,
+Pomiar z 2026-11-24: `gomdgo` po zmniejszeniu węzła drzewa (commit `a64a117`), `goldmark` v1.8.7,
 `gomarkdown/markdown` v0.0.0-20261123200727-167101872811, `blackfriday` v2.1.0, Go 1.26.6, macOS arm64. Mediana
 z 5 przebiegów po 2 s; obciążenie maszyny 2–4, rozrzut między przebiegami poniżej 2%. Przebieg przy obciążeniu
 7–9 dał rozrzut do 40% i został odrzucony.

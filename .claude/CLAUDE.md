@@ -44,10 +44,13 @@ kolumnę „Stan” w `docs/roadmap.md`.
   do wydania (ADR 0012): 24 h bez błędu na kodzie biblioteki z `3acafeb` (2026-11-23), potem zmiana węzła drzewa
   (`blockData` w `node.go`, mniej pamięci) i nowy przebieg 24 h na Synology od 2026-11-24 19:53, wynik w
   `~/gomdgo-fuzz/fuzz.log` na serwerze, do wpisania w `docs/testing.md`; każda zmiana plików `*.go`
-  katalogu głównego poza testami zeruje licznik, więc poprawki po dokumentach odbiorcy (K8) zbieraj w paczki;
+  pakietu `markdown/` poza testami zeruje licznik, więc poprawki po dokumentach odbiorcy (K8) zbieraj w paczki;
   API według ADR 0005 (`New(Config).Parse(src).HTML()`), polityka bezpieczeństwa według ADR 0006, rozszerzenia
   według ADR 0007 i 0008 (`gfm.go`): GFM domyślnie włączone, `Config.Disable` wyłącza;
-- układ kodu: `block.go` (faza 1, wiersz po wierszu), `inline.go` (faza 2, stos ograniczników i stos nawiasów),
+- układ repozytorium (ADR 0016): w katalogu głównym tylko `README.md`, `LICENSE`, `NOTICE`, `go.mod`; biblioteka to
+  pakiet `markdown` w `markdown/` (import `github.com/polestorm/gomdgo/markdown`), ten plik leży w `.claude/`;
+  wydana wersja: v0.1.0 (2026-11-24);
+- układ kodu (wszystko w `markdown/`): `block.go` (faza 1, wiersz po wierszu), `inline.go` (faza 2, stos ograniczników i stos nawiasów),
   `links.go`, `htmltag.go`, `escape.go` (skanery wspólne), `render.go` (przejście iteracyjne); każde wyszukiwanie
   w przód, które może zawieść, musi zapamiętać niepowodzenie, a każdy nowy przypadek złośliwy trafia do
   `TestPathological`;
@@ -56,8 +59,8 @@ kolumnę „Stan” w `docs/roadmap.md`.
   diagramy `gomermaidgo` przez `Config.CodeBlocks` (ADR 0015; testy puszczaj w jego katalogu); łączenie z `gomermaidgo` i `gopdfgo` należy do czwartego projektu, `../gopressgo`
   (założony 2026-11-23). Jest pierwszym odbiorcą `gomdgo`: od niego przyjdą pliki wzorcowe do K8, a uwagi
   przekazane z tej strony leżą w `../gopressgo/docs/notes-from-gomdgo.md`;
-- miara postępu: `go test -v -run TestSpec .`; listy zaliczonych przykładów `testdata/spec/passing-*.txt` przepisuje
-  `go test -update .` (opis w `docs/testing.md`); porównanie z odniesieniem: `tools/compare`;
+- miara postępu: `go test -v -run TestSpec ./markdown`; listy zaliczonych przykładów `testdata/spec/passing-*.txt` przepisuje
+  `go test -update ./markdown` (opis w `docs/testing.md`); porównanie z odniesieniem: `tools/compare`;
 - pytań otwartych nie ma (`docs/adr/open-questions.md`; wybory robocze potwierdzone 2026-11-22); licencja to Apache 2.0 (ADR 0013), a porównanie z `goldmark` w `README.md` trzeba
   uaktualniać razem z liczbami w `docs/testing.md`;
 - wymagania piszemy razem z etapem, w plikach według prefiksów z `requirements/README.md`;

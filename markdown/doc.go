@@ -1,4 +1,4 @@
-// Package gomdgo zamienia Markdown (CommonMark z rozszerzeniami GFM) na HTML.
+// Package markdown zamienia Markdown (CommonMark z rozszerzeniami GFM) na HTML.
 //
 // Najprostsze użycie to Render(src): CommonMark z rozszerzeniami GFM, wynik bezpieczny domyślnie.
 // Ustawienia przyjmuje New(Config), a Converter.Parse i Document.HTML rozdzielają parsowanie od zapisu
@@ -9,4 +9,4 @@
 // i pomiar wydajności. Plan etapów jest
 // w docs/roadmap.md, a kryteria, po których pakiet zastąpi parser odniesienia,
 // w docs/adr/0001-scope-and-acceptance.md.
-package gomdgo
+package markdown

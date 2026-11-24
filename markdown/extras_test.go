@@ -1,4 +1,4 @@
-package gomdgo
+package markdown
 
 import (
 	"fmt"

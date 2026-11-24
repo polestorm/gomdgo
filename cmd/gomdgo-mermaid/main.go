@@ -12,8 +12,8 @@ package main
 import (
 	"os"
 
-	"github.com/polestorm/gomdgo"
 	"github.com/polestorm/gomdgo/internal/cli"
+	gomdgo "github.com/polestorm/gomdgo/markdown"
 	"github.com/polestorm/gomermaidgo/markdown"
 	"github.com/polestorm/gomermaidgo/mermaid"
 )

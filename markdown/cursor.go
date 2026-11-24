@@ -1,4 +1,4 @@
-package gomdgo
+package markdown
 
 // cursor to pozycja w wierszu z rachunkiem kolumn. Tabulator nie jest zamieniany na spacje w treści, ale
 // przy wyznaczaniu struktury bloków zachowuje się jak dopełnienie do następnej kolumny podzielnej przez 4.

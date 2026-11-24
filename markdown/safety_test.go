@@ -1,4 +1,4 @@
-package gomdgo
+package markdown
 
 import (
 	"bytes"
@@ -149,7 +149,7 @@ func TestSafeByDefault(t *testing.T) {
 			inputs = append(inputs, e.Markdown)
 		}
 	}
-	files, _ := filepath.Glob("testdata/corpus/*.md")
+	files, _ := filepath.Glob("../testdata/corpus/*.md")
 	for _, f := range files {
 		b, err := os.ReadFile(f)
 		if err != nil {

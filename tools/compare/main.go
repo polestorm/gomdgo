@@ -16,9 +16,9 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"github.com/polestorm/gomdgo"
 	"github.com/polestorm/gomdgo/internal/htmlnorm"
 	"github.com/polestorm/gomdgo/internal/spectest"
+	"github.com/polestorm/gomdgo/markdown"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/renderer"
@@ -67,18 +67,18 @@ func main() {
 	// specyfikacji. Tryb -safe: oba pomijają surowy HTML i filtrują adresy, każdy po swojemu; goldmark
 	// zostawia w miejscu pominiętego HTML komentarz, który przed porównaniem usuwamy.
 	var rendererOptions []renderer.Option
-	cfg := gomdgo.Config{RawHTML: gomdgo.RawHTMLPass, AnyScheme: true}
+	cfg := markdown.Config{RawHTML: markdown.RawHTMLPass, AnyScheme: true}
 	if *safe {
-		cfg = gomdgo.Config{RawHTML: gomdgo.RawHTMLOmit}
+		cfg = markdown.Config{RawHTML: markdown.RawHTMLOmit}
 	}
 	plainCfg := cfg
-	plainCfg.Disable = gomdgo.GFM // przykłady CommonMark: bez rozszerzeń po obu stronach
-	conv := gomdgo.New(plainCfg)
+	plainCfg.Disable = markdown.GFM // przykłady CommonMark: bez rozszerzeń po obu stronach
+	conv := markdown.New(plainCfg)
 	if *refAlign == "style" {
 		// Odniesienie przy ustawieniach domyślnych: po naszej stronie opcje zgodności (ADR 0008).
 		cfg.SingleTilde, cfg.TableAlignStyle = true, true
 	}
-	convGFM := gomdgo.New(cfg)
+	convGFM := markdown.New(cfg)
 	if !*safe {
 		rendererOptions = append(rendererOptions, html.WithUnsafe())
 	}

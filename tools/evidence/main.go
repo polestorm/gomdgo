@@ -60,7 +60,7 @@ func main() {
 		}
 		evidence[id] = append(evidence[id], what)
 	}
-	tests, _ := filepath.Glob("*_test.go")
+	tests, _ := filepath.Glob("markdown/*_test.go")
 	internal, _ := filepath.Glob("internal/*/*_test.go")
 	for _, path := range append(tests, internal...) {
 		lines := strings.Split(read(path), "\n")

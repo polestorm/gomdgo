@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/polestorm/gomdgo"
 	"github.com/polestorm/gomdgo/internal/spectest"
+	"github.com/polestorm/gomdgo/markdown"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/renderer/html"
@@ -54,10 +54,10 @@ func BenchmarkCorpus(b *testing.B) {
 		extra = append(extra, data)
 	}
 
-	pass := gomdgo.Config{RawHTML: gomdgo.RawHTMLPass, AnyScheme: true}
+	pass := markdown.Config{RawHTML: markdown.RawHTMLPass, AnyScheme: true}
 	plain := pass
-	plain.Disable = gomdgo.GFM
-	ours, oursPlain := gomdgo.New(pass), gomdgo.New(plain)
+	plain.Disable = markdown.GFM
+	ours, oursPlain := markdown.New(pass), markdown.New(plain)
 	ref := goldmark.New(goldmark.WithExtensions(extension.GFM), goldmark.WithRendererOptions(html.WithUnsafe()))
 	refPlain := goldmark.New(goldmark.WithRendererOptions(html.WithUnsafe()))
 

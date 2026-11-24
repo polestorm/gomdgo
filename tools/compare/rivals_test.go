@@ -10,9 +10,9 @@ import (
 	gmd "github.com/gomarkdown/markdown"
 	gmdhtml "github.com/gomarkdown/markdown/html"
 	gmdparser "github.com/gomarkdown/markdown/parser"
-	"github.com/polestorm/gomdgo"
 	"github.com/polestorm/gomdgo/internal/htmlnorm"
 	"github.com/polestorm/gomdgo/internal/spectest"
+	"github.com/polestorm/gomdgo/markdown"
 	"github.com/russross/blackfriday/v2"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
@@ -30,14 +30,14 @@ type rival struct {
 }
 
 func rivals() []rival {
-	pass := gomdgo.Config{RawHTML: gomdgo.RawHTMLPass, AnyScheme: true}
+	pass := markdown.Config{RawHTML: markdown.RawHTMLPass, AnyScheme: true}
 	plainCfg := pass
-	plainCfg.Disable = gomdgo.GFM
-	ours, oursPlain := gomdgo.New(pass), gomdgo.New(plainCfg)
+	plainCfg.Disable = markdown.GFM
+	ours, oursPlain := markdown.New(pass), markdown.New(plainCfg)
 	ref := goldmark.New(goldmark.WithExtensions(extension.GFM), goldmark.WithRendererOptions(html.WithUnsafe()))
 	refPlain := goldmark.New(goldmark.WithRendererOptions(html.WithUnsafe()))
 
-	oursRun := func(c *gomdgo.Converter) func([]byte) []byte {
+	oursRun := func(c *markdown.Converter) func([]byte) []byte {
 		return func(src []byte) []byte {
 			out, err := c.Render(src)
 			if err != nil {

@@ -1,4 +1,4 @@
-package gomdgo
+package markdown
 
 import (
 	"flag"
@@ -15,8 +15,8 @@ import (
 var update = flag.Bool("update", false, "przepisz listy zaliczonych przykładów (testdata/spec/passing-*.txt)")
 
 const (
-	commonMarkSpec = "testdata/spec/commonmark-0.31.2.txt"
-	gfmSpec        = "testdata/spec/gfm-0.29.txt"
+	commonMarkSpec = "../testdata/spec/commonmark-0.31.2.txt"
+	gfmSpec        = "../testdata/spec/gfm-0.29.txt"
 )
 
 // specConverter odpowiada założeniom przykładów specyfikacji CommonMark: bez rozszerzeń, surowy HTML przechodzi
@@ -49,7 +49,7 @@ func loadSpec(t testing.TB, path string) []spectest.Example {
 
 // TestSpecCommonMark mierzy kryterium K1: wszystkie przykłady CommonMark 0.31.2.
 func TestSpecCommonMark(t *testing.T) {
-	runSpec(t, specConverter, loadSpec(t, commonMarkSpec), "testdata/spec/passing-commonmark.txt")
+	runSpec(t, specConverter, loadSpec(t, commonMarkSpec), "../testdata/spec/passing-commonmark.txt")
 }
 
 // TestSpecGFM mierzy kryterium K2: przykłady z rozdziałów rozszerzeń GFM 0.29-gfm. Część wspólną z CommonMark
@@ -61,7 +61,7 @@ func TestSpecGFM(t *testing.T) {
 			ext = append(ext, e)
 		}
 	}
-	runSpec(t, gfmSpecConverter, ext, "testdata/spec/passing-gfm.txt")
+	runSpec(t, gfmSpecConverter, ext, "../testdata/spec/passing-gfm.txt")
 }
 
 // runSpec renderuje przykłady i porównuje wynik co do bajta. Przykład, który jeszcze nie przechodzi, nie psuje
