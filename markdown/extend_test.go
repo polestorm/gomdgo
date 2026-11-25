@@ -62,7 +62,7 @@ func TestCodeBlockRendererOutput(t *testing.T) {
 		{"a\n```d\nA\n```\nb", "<p>a</p>\n<figure data-line=\"2\">A</figure>\n<p>b</p>\n"},
 		{"- x\n  ```d\n  A\n  ```\n- y", "<ul>\n<li>x\n<figure data-line=\"2\">A</figure>\n</li>\n<li>y</li>\n</ul>\n"},
 		{"> ~~~d opis\n> A", "<blockquote>\n<figure data-line=\"1\">A</figure>\n</blockquote>\n"},
-		{"    d\n\n```D\nA\n```\n\n```dd\nA\n```", "<pre><code>d\n</code></pre>\n<pre><code class=\"language-D\">A\n</code></pre>\n<pre><code class=\"language-dd\">A\n</code></pre>\n"},
+		{"    d\n\n```D\nA\n```\n\n```dd\nA\n```", "<pre><code>d\n</code></pre>\n<figure data-line=\"3\">A</figure>\n<pre><code class=\"language-dd\">A\n</code></pre>\n"},
 		{"``` &#100; opis\nB\n```", "<figure data-line=\"1\">B</figure>\n"},
 	}
 	checkCases(t, conv, cases)
@@ -75,6 +75,32 @@ func TestCodeBlockRendererOutput(t *testing.T) {
 	}
 	if got := string(Render([]byte("```d\nA\n```"))); got != "<pre><code class=\"language-d\">A\n</code></pre>\n" {
 		t.Errorf("without a renderer: %q", got)
+	}
+}
+
+// REQ: EXT-001
+func TestCodeBlockLanguageCase(t *testing.T) {
+	var langs []string
+	record := func(tag string) CodeBlockFunc {
+		return func(b CodeBlock) ([]byte, error) {
+			langs = append(langs, tag+":"+b.Lang)
+			return []byte("<" + tag + ">"), nil
+		}
+	}
+	src := []byte("```Go\nA\n```\n\n```GO\nB\n```\n\n```go\nC\n```\n\n```ŻÓŁW\nD\n```\n")
+	// Klucze różniące się tylko wielkością liter: wygrywa pierwszy w porządku bajtowym („Go” < „go”), niezależnie
+	// od kolejności przechodzenia mapy; sprawdzamy wiele konwerterów.
+	for i := 0; i < 20; i++ {
+		langs = langs[:0]
+		conv := New(Config{CodeBlocks: map[string]CodeBlockFunc{"go": record("lower"), "Go": record("upper"), "żółw": record("turtle")}})
+		out, err := conv.Parse(src).HTML()
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := "<upper>\n<upper>\n<upper>\n<turtle>\n"
+		if string(out) != want || strings.Join(langs, " ") != "upper:Go upper:GO upper:go turtle:ŻÓŁW" {
+			t.Fatalf("got %q, calls %v", out, langs)
+		}
 	}
 }
 

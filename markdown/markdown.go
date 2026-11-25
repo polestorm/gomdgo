@@ -2,6 +2,7 @@ package markdown
 
 import (
 	"bytes"
+	"slices"
 	"strings"
 	"unicode/utf8"
 )
@@ -54,9 +55,11 @@ type Config struct {
 	// style="text-align:…" instead of the align attribute of the GFM specification.
 	TableAlignStyle bool
 
-	// CodeBlocks maps a language (the first word of the info string, case-sensitive), for example
-	// "mermaid", to a function that renders fenced code blocks in that language. A block in any other
-	// language is written the usual way. The result of the function goes into the document unchanged.
+	// CodeBlocks maps a language (the first word of the info string), for example "mermaid", to a function
+	// that renders fenced code blocks in that language. Languages are matched without regard to case, so
+	// ```Mermaid uses the same function; CodeBlock.Lang keeps the spelling of the document. When two keys
+	// differ only in case, the first one in byte order wins. A block in any other language is written the
+	// usual way. The result of the function goes into the document unchanged.
 	CodeBlocks map[string]CodeBlockFunc
 
 	// References resolves inline [[target]] references. When it is nil, such text is ordinary CommonMark
@@ -96,9 +99,18 @@ func New(cfg Config) *Converter {
 	}
 	c.cfg.Schemes = nil // lista wywołującego nie jest przechowywana; obowiązuje kopia w schemes
 	if len(cfg.CodeBlocks) > 0 {
+		// Klucze bez rozróżniania wielkości liter (ADR 0018). Przy kluczach różniących się tylko wielkością
+		// liter wygrywa pierwszy w porządku bajtowym, żeby wybór nie zależał od kolejności przechodzenia mapy.
+		langs := make([]string, 0, len(cfg.CodeBlocks))
+		for lang := range cfg.CodeBlocks {
+			langs = append(langs, lang)
+		}
+		slices.Sort(langs)
 		c.codeBlocks = make(map[string]CodeBlockFunc, len(cfg.CodeBlocks))
-		for lang, fn := range cfg.CodeBlocks {
-			c.codeBlocks[lang] = fn
+		for _, lang := range langs {
+			if folded := strings.ToLower(lang); c.codeBlocks[folded] == nil {
+				c.codeBlocks[folded] = cfg.CodeBlocks[lang]
+			}
 		}
 	}
 	c.cfg.CodeBlocks = nil

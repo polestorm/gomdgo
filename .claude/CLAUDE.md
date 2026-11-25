@@ -43,7 +43,9 @@ kolumnę „Stan” w `docs/roadmap.md`.
   generuje `tools/evidence`, korpus dokumentów rzeczywistych opisuje `docs/testing.md`; K5 liczymy na kandydacie
   do wydania (ADR 0012): 24 h bez błędu na kodzie biblioteki z `9c8577b` (2026-11-23), potem zmiana węzła drzewa
   (`blockData` w `node.go`, mniej pamięci) i nowy przebieg 24 h na Synology od 2026-11-24 19:53, wynik w
-  `~/gomdgo-fuzz/fuzz.log` na serwerze, do wpisania w `docs/testing.md`; każda zmiana plików `*.go`
+  `~/gomdgo-fuzz/fuzz.log` na serwerze, do wpisania w `docs/testing.md`; 2026-11-25 kod biblioteki znów się zmienił
+  (język bloku w `Config.CodeBlocks` bez rozróżniania wielkości liter, ADR 0018), więc ten przebieg jest pomiarem
+  pośrednim, a 24 h trzeba powtórzyć; każda zmiana plików `*.go`
   pakietu `markdown/` poza testami zeruje licznik, więc poprawki po dokumentach odbiorcy (K8) zbieraj w paczki;
   API według ADR 0005 (`New(Config).Parse(src).HTML()`), polityka bezpieczeństwa według ADR 0006, rozszerzenia
   według ADR 0007 i 0008 (`gfm.go`): GFM domyślnie włączone, `Config.Disable` wyłącza;

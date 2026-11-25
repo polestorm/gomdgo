@@ -75,8 +75,11 @@ func codeInfo(n *node) (lang, info string) {
 
 // customCodeBlock zapisuje blok kodu przez funkcję wywołującego, jeśli dla jego języka jest zarejestrowana.
 func (r *renderer) customCodeBlock(n *node, lang, info string) bool {
-	fn := r.conv.codeBlocks[lang]
-	if fn == nil || !n.fenced {
+	if r.conv.codeBlocks == nil || !n.fenced {
+		return false
+	}
+	fn := r.conv.codeBlocks[strings.ToLower(lang)] // klucze są zapisane małymi literami (ADR 0018)
+	if fn == nil {
 		return false
 	}
 	line, col := r.doc.position(n.pos)
