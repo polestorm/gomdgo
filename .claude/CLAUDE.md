@@ -49,7 +49,7 @@ kolumnę „Stan” w `docs/roadmap.md`.
   według ADR 0007 i 0008 (`gfm.go`): GFM domyślnie włączone, `Config.Disable` wyłącza;
 - układ repozytorium (ADR 0016): w katalogu głównym tylko `README.md`, `LICENSE`, `NOTICE`, `go.mod`; biblioteka to
   pakiet `markdown` w `markdown/` (import `github.com/polestorm/gomdgo/markdown`), ten plik leży w `.claude/`;
-  wydana wersja: v0.1.0 (2026-11-24); `go.mod` wymaga Go 1.22 (sprawdzone toolchainem 1.22.12), a CI
+  wydana wersja: v0.1.1 (2026-11-25; v0.1.0 nie używamy, znaczników nie przesuwamy: ADR 0017); `go.mod` wymaga Go 1.22 (sprawdzone toolchainem 1.22.12), a CI
   (`.github/workflows/test.yml`) puszcza testy na Go 1.22 i bieżącym, na Linuksie i macOS, także w obu
   zagnieżdżonych modułach;
 - układ kodu (wszystko w `markdown/`): `block.go` (faza 1, wiersz po wierszu), `inline.go` (faza 2, stos ograniczników i stos nawiasów),

@@ -95,7 +95,7 @@ blackfriday implement an older Markdown dialect.
 
 ## Status
 
-Version 0.1.0: feature complete, hardening in progress. The API may still change before 1.0. Requires Go 1.22
+Version 0.1.1: feature complete, hardening in progress. The API may still change before 1.0. Requires Go 1.22
 or newer.
 
 - CommonMark 0.31.2: 652 of 652 examples; GFM 0.29 extensions: 24 of 24.
